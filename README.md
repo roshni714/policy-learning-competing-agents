@@ -14,4 +14,4 @@ To run high-dimensional experiments, use the following command.
 ```
 ./run_high_dim.sh
 ```
-and view results from the high-dimensional experiments by running paper-table-2.ipynb.
+and reproduce results from Figure 4 and Table 2 using paper-figure-4.ipynb and paper-table-2.ipynb, respectively.
