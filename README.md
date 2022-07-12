@@ -8,7 +8,7 @@ To run the low-dimensional/toy experiments, use the following command.
 ```
 ./run_low_dim.sh
 ```
-and view the results...
+and reproduce the results from Table 1 using paper-table-1.ipynb.
 
 To run high-dimensional experiments, use the following command. 
 ```
