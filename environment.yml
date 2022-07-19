@@ -1,0 +1,11 @@
+name: test
+channels:
+  - defaults
+dependencies:
+  - argh
+  - numpy
+  - scipy
+  - python=3.9
+  - matplotlib
+  - tqdm
+prefix: /home/users/rsahoo/miniconda3/envs/test
