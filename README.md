@@ -7,7 +7,7 @@ To reproduce Figure 1, 2, and 3, run paper-figure-1.ipynb, paper-figure-2.ipynb,
 To setup the environment for running the code, run
 ```
 conda env create -n competing_agents --file environment.yml
-conda activate competing-agents
+conda activate competing_agents
 ```
 
 To run the low-dimensional/toy experiments, use the following command.
