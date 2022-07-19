@@ -4,6 +4,12 @@ This repository contains the code for replicating the figures and simulations in
 
 To reproduce Figure 1, 2, and 3, run paper-figure-1.ipynb, paper-figure-2.ipynb, and paper-figure-3.ipynb, respectively.
 
+To setup the environment for running the code, run
+```
+conda env create -n competing_agents --file environment.yml
+conda activate competing-agents
+```
+
 To run the low-dimensional/toy experiments, use the following command.
 ```
 ./run_low_dim.sh
