@@ -12,12 +12,14 @@ conda activate competing_agents
 
 To run the low-dimensional/toy experiments, use the following command.
 ```
+chmod +x run_low_dim.sh
 ./run_low_dim.sh
 ```
 and reproduce the results from Table 1 using paper-table-1.ipynb.
 
 To run high-dimensional experiments, use the following command. 
 ```
+chmod +x run_high_dim.sh
 ./run_high_dim.sh
 ```
 and reproduce results from Figure 4 and Table 2 using paper-figure-4.ipynb and paper-table-2.ipynb, respectively.
