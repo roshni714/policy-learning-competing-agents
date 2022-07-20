@@ -1,11 +1,13 @@
-name: test
+name: competing_agents
 channels:
   - defaults
 dependencies:
-  - argh
-  - numpy
-  - scipy
   - python=3.9
-  - matplotlib
+  - scipy
+  - argh
   - tqdm
-prefix: /home/users/rsahoo/miniconda3/envs/test
+  - numpy
+  - matplotlib
+  - jupyter
+  - pandas
+prefix: /home/users/rsahoo/miniconda3/envs/competing_agents
