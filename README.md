@@ -1,6 +1,6 @@
 # Replication Code for Policy Learning with Competing Agents
 
-This repository contains the code for replicating the figures and simulations in Policy Learning for Competing Agents.
+This repository contains the code for replicating the figures and simulations in Policy Learning with Competing Agents.
 
 To setup the environment for running the code, run
 ```
