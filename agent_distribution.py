@@ -34,7 +34,7 @@ class AgentDistribution:
         else:
             etas = types["etas"]
             gammas = types["gammas"]
-        if not prop:
+        if prop is None:
             self.prop = np.ones(n_types) * (1 / n_types)
         else:
             self.prop = prop

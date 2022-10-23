@@ -13,6 +13,8 @@ from utils import (
 )
 from optimal_beta import optimal_beta_expected_policy_loss, expected_policy_loss
 
+from data_gen import get_agent_distribution_nels
+
 
 def learn_model(
     agent_dist,
@@ -106,6 +108,7 @@ def create_challenging_agent_dist(n, n_types, d):
     return agent_dist
 
 
+@argh.arg("--nels", default=False)
 @argh.arg("--n", default=100000)
 @argh.arg("--n_types", default=1)
 @argh.arg("--d", default=2)
@@ -117,6 +120,7 @@ def create_challenging_agent_dist(n, n_types, d):
 @argh.arg("--seed", default=0)
 @argh.arg("--save", default="results")
 def main(
+    nels=False,
     n=100000,
     n_types=1,
     d=2,
@@ -129,22 +133,41 @@ def main(
     save="results",
 ):
     np.random.seed(seed)
-
-    #    agent_dist = create_challenging_agent_dist(n, n_types, d)
-    agent_dist = create_generic_agent_dist(n, n_types, d)
-    sigma = compute_continuity_noise(agent_dist) + 0.05
     q = 0.7
-    betas, s_eqs, emp_losses = learn_model(
-        agent_dist,
-        sigma,
-        q,
-        true_beta=None,
-        learning_rate=learning_rate,
-        max_iter=max_iter,
-        gradient_type=gradient_type,
-        perturbation_s=perturbation_s,
-        perturbation_beta=perturbation_beta,
-    )
+    
+    if nels:
+        d=9
+        prev_beta = np.ones(d)/np.sqrt(d)
+        prev_s= 0.1
+        agent_dist, _, _, sigma = get_agent_distribution_nels(n, prev_beta, prev_s, n_clusters=5, seed=0)
+        
+        betas, s_eqs, emp_losses = learn_model(agent_dist, 
+                                               sigma, 
+                                               q,
+                                               true_beta=None,
+                                               learning_rate=learning_rate,
+                                               max_iter=max_iter,
+                                               gradient_type=gradient_type,
+                                               perturbation_s=perturbation_s,
+                                               perturbation_beta=perturbation_beta,
+                                              )
+                                               
+    
+    else:
+        agent_dist = create_generic_agent_dist(n, n_types, d)
+        sigma = compute_continuity_noise(agent_dist) + 0.05
+
+        betas, s_eqs, emp_losses = learn_model(
+            agent_dist,
+            sigma,
+            q,
+            true_beta=None,
+            learning_rate=learning_rate,
+            max_iter=max_iter,
+            gradient_type=gradient_type,
+            perturbation_s=perturbation_s,
+            perturbation_beta=perturbation_beta,
+        )
 
     results = {
         "n": n,

@@ -100,8 +100,18 @@ def compute_continuity_noise(agent_dist):
     Keyword args:
     agent_dist -- AgentDistribution
     """
-    gammas = agent_dist.get_gammas()
+    gammas = [agent.gamma for agent in agent_dist.agents]
 
+    min_eigenvalue = np.min(gammas)
+    return np.sqrt(1 / (2 * min_eigenvalue * (np.sqrt(2 * np.pi * np.e)))) + 0.001
+
+
+def compute_continuity_noise_gammas(gammas):
+    """Method that returns the standard deviation of the noise distribution for ensuring continuity.
+
+    Keyword args:
+    agent_dist -- AgentDistribution
+    """
     min_eigenvalue = np.min(gammas)
     return np.sqrt(1 / (2 * min_eigenvalue * (np.sqrt(2 * np.pi * np.e)))) + 0.001
 
@@ -112,7 +122,7 @@ def compute_contraction_noise(agent_dist):
     Keyword args:
     agent_dist -- AgentDistribution
     """
-    gammas = agent_dist.get_gammas()
+    gammas = [agent.gamma for agent in agent_dist.agents]
 
     min_eigenvalue = np.min(gammas)
     return np.sqrt(1 / (min_eigenvalue * (np.sqrt(2 * np.pi * np.e)))) + 0.001
