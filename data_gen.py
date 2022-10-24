@@ -86,19 +86,19 @@ def generate_covariates():
     
     for variable in stmeg_variables:
         if variable != "STU_ID":
-            stmeg[variable] = (stmeg[variable] - min_val[variable])/(max_val[variable] - min_val[variable])
+            stmeg[variable] = 10 * (stmeg[variable] - min_val[variable])/(max_val[variable] - min_val[variable])
         if variable.startswith("F2RH"):
-            stmeg[variable] = -stmeg[variable]
+            stmeg[variable] = 10-stmeg[variable]
     X = stmeg[stmeg_variables[2:]].to_numpy()
     socio_econ = stmeg[stmeg_variables[1:2]].to_numpy()
     stu_id = stmeg[stmeg_variables[:1]].to_numpy()
     return X, socio_econ, stu_id
 
 def compute_gammas(socio_econ):
-    return 1/(socio_econ + 1e-1)
+    return (0.25 * socio_econ + 1e-1)
 
 def compute_etas(X, gammas, sigma, beta, s):
-    etas = X + (1/(2 * gammas)) * norm.pdf(s - np.dot(X, beta), 0, scale=sigma).reshape(X.shape[0], 1) * beta
+    etas = X - (1/(2 * gammas)) * norm.pdf(s - np.dot(X, beta), 0, scale=sigma).reshape(X.shape[0], 1) * beta
     return etas
 
 
@@ -118,14 +118,17 @@ def generate_losses():
     
     return loss_admitted.reshape(len(loss_admitted), 1), stu_id
 
-def get_types_and_noise(prev_beta, prev_s, seed=0):
+def get_types_and_noise(prev_beta, seed=0):
     
     np.random.seed(seed)
     
     X, socio_econ, stu_id = generate_covariates()
+    
+    scores = [np.dot(prev_beta, X[i]) for i in range(len(X))]
+    prev_s = np.quantile(scores, 0.7)
+    print(prev_s)
     gammas = compute_gammas(socio_econ)
     sigma = compute_continuity_noise_gammas(gammas)
-    print(sigma)
     etas = compute_etas(X, gammas, sigma, prev_beta, prev_s)
     etas = etas.reshape(etas.shape[0], etas.shape[1], 1)
     gammas = gammas.reshape(etas.shape[0], 1, 1) #* np.ones(etas.shape)
@@ -136,11 +139,11 @@ def get_types_and_noise(prev_beta, prev_s, seed=0):
     return all_types, sigma
 
 
-def get_agent_distribution_nels(n, prev_beta, prev_s, n_clusters=5, seed=0):
+def get_agent_distribution_nels(n, prev_beta, n_clusters=5, seed=0):
     
     np.random.seed(seed)
     
-    all_types, sigma = get_types_and_noise(prev_beta, prev_s, seed)
+    all_types, sigma = get_types_and_noise(prev_beta, seed)
     kmeans = KMeans(n_clusters=n_clusters, random_state=0).fit(all_types)
     all_labels = kmeans.predict(all_types)
     unique, counts = np.unique(all_labels, return_counts=True)
