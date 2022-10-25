@@ -13,30 +13,32 @@ from utils import (
 )
 from optimal_beta import optimal_beta_expected_policy_loss, expected_policy_loss
 
-from data_gen import get_agent_distribution_nels
+from data_gen import get_agent_distribution_and_losses_nels
 
 
 def learn_model(
     agent_dist,
     sigma,
     q,
-    true_beta=None,
+    true_scores,
     learning_rate=0.05,
     max_iter=30,
     gradient_type="total_deriv",
     perturbation_s=0.1,
     perturbation_beta=0.1,
+    beta_init=None
 ):
-    if true_beta is None:
-        true_beta = np.zeros((agent_dist.d, 1))
-        true_beta[0] = 1.0
+   
 
     betas = []
     s_eqs = []
     emp_losses = []
-    beta = np.ones((agent_dist.d, 1))
-    beta_norm = np.sqrt(np.sum(beta ** 2))
-    beta /= beta_norm
+    if beta_init is None:
+        beta = np.ones((agent_dist.d, 1))
+        beta_norm = np.sqrt(np.sum(beta ** 2))
+        beta /= beta_norm
+    else:
+        beta = beta_init
     for i in range(max_iter):
         s_eq = agent_dist.quantile_fixed_point_true_distribution(beta, sigma, q)
         betas.append(beta.copy())
@@ -47,7 +49,7 @@ def learn_model(
             s_eq,
             sigma,
             q,
-            true_beta,
+            true_scores,
             perturbation_s_size=perturbation_s,
             perturbation_beta_size=perturbation_beta,
         )
@@ -138,37 +140,51 @@ def main(
     if nels:
         d=9
         prev_beta = np.ones(d)/np.sqrt(d)
-        prev_s= 0.1
-        agent_dist, _, _, sigma = get_agent_distribution_nels(n, prev_beta, prev_s, n_clusters=5, seed=0)
-        
+        agent_dist, _, _, losses, sigma = get_agent_distribution_and_losses_nels(n, prev_beta, n_clusters=5, seed=0)
+        true_scores = losses[agent_dist.n_agent_types].reshape(agent_dist.n, 1) 
+        beta = np.random.normal(size=(agent_dist.d, 1))
+        beta_norm = np.sqrt(np.sum(beta ** 2))
+        beta /= beta_norm
         betas, s_eqs, emp_losses = learn_model(agent_dist, 
                                                sigma, 
                                                q,
-                                               true_beta=None,
+                                               true_scores=true_scores,
                                                learning_rate=learning_rate,
                                                max_iter=max_iter,
                                                gradient_type=gradient_type,
                                                perturbation_s=perturbation_s,
                                                perturbation_beta=perturbation_beta,
+                                               beta_init=beta
                                               )
-                                               
+
+        final_loss = emp_losses[-1]
     
     else:
+        
         agent_dist = create_generic_agent_dist(n, n_types, d)
         sigma = compute_continuity_noise(agent_dist) + 0.05
+        true_beta = np.zeros((agent_dist.d, 1))
+        true_beta[0] = 1.0
+        etas = agent_dist.get_etas()
+        true_scores = np.array(
+            [-np.matmul(self.true_beta.T, eta).item() for eta in etas]
+        ).reshape(agent_dist.n, 1)
 
         betas, s_eqs, emp_losses = learn_model(
             agent_dist,
             sigma,
             q,
-            true_beta=None,
+            true_scores=true_scores,
             learning_rate=learning_rate,
             max_iter=max_iter,
             gradient_type=gradient_type,
             perturbation_s=perturbation_s,
             perturbation_beta=perturbation_beta,
         )
-
+        final_loss = expected_policy_loss(
+            agent_dist, np.array(betas[-1]).reshape(d, 1), s_eqs[-1], sigma
+        )
+ 
     results = {
         "n": n,
         "d": d,
@@ -178,9 +194,7 @@ def main(
         "seed": seed,
         "perturbation_s": perturbation_s,
         "perturbation_beta": perturbation_beta,
-        "final_loss": expected_policy_loss(
-            agent_dist, np.array(betas[-1]).reshape(d, 1), s_eqs[-1], sigma
-        ),
+        "final_loss": final_loss,
         "final_beta": list(betas[-1].flatten()),
         "gradient_type": gradient_type,
     }

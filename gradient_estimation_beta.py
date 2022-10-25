@@ -12,7 +12,7 @@ class GradientEstimator:
         s,
         sigma,
         q,
-        true_beta,
+        true_scores,
         perturbation_s_size,
         perturbation_beta_size,
     ):
@@ -32,11 +32,7 @@ class GradientEstimator:
         self.beta = beta
         self.s = s
         self.q = q
-        self.true_beta = true_beta
-        etas = agent_dist.get_etas()
-        self.true_scores = np.array(
-            [-np.matmul(self.true_beta.T, eta).item() for eta in etas]
-        ).reshape(agent_dist.n, 1)
+        self.true_scores = true_scores
         self.perturbation_s_size = perturbation_s_size
         self.perturbation_beta_size = perturbation_beta_size
 

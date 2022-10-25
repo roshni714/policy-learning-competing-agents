@@ -108,7 +108,7 @@ def generate_losses():
     stmeg = stmeg.replace(r'^\s*$', np.nan, regex=True)
     stmeg = stmeg.astype({"F3ATTEND": 'float32'})
     
-    stmeg["F3ATTEND"].replace(to_replace= -9., value=0., inplace=True)
+    stmeg["F3ATTEND"].replace(to_replace= -9., value=np.nan, inplace=True)
     stmeg["F3ATTEND"].replace(to_replace= -6., value=np.nan, inplace=True)
     stmeg["F3ATTEND"].replace(to_replace=np.nan, value=stmeg["F3ATTEND"].mean(), inplace=True)
     
@@ -116,7 +116,7 @@ def generate_losses():
     loss_admitted = stmeg["F3ATTEND"].to_numpy()
     stu_id = stmeg["STU_ID"].to_numpy()
     
-    return loss_admitted.reshape(len(loss_admitted), 1), stu_id
+    return loss_admitted.reshape(len(loss_admitted), 1, 1), stu_id
 
 def get_types_and_noise(prev_beta, seed=0):
     
@@ -126,20 +126,54 @@ def get_types_and_noise(prev_beta, seed=0):
     
     scores = [np.dot(prev_beta, X[i]) for i in range(len(X))]
     prev_s = np.quantile(scores, 0.7)
-    print(prev_s)
     gammas = compute_gammas(socio_econ)
     sigma = compute_continuity_noise_gammas(gammas)
     etas = compute_etas(X, gammas, sigma, prev_beta, prev_s)
     etas = etas.reshape(etas.shape[0], etas.shape[1], 1)
     gammas = gammas.reshape(etas.shape[0], 1, 1) #* np.ones(etas.shape)
-    print(gammas.shape)
     all_types = np.concatenate((etas, gammas), axis=1)
     all_types= all_types.reshape(all_types.shape[0], all_types.shape[1])
     
     return all_types, sigma
 
+def get_types_loss_and_noise(prev_beta, seed=0):
+    
+    np.random.seed(seed)
+    
+    X, socio_econ, stu_id = generate_covariates()
+    
+    scores = [np.dot(prev_beta, X[i]) for i in range(len(X))]
+    prev_s = np.quantile(scores, 0.7)
+    gammas = compute_gammas(socio_econ)
+    sigma = compute_continuity_noise_gammas(gammas)
+    etas = compute_etas(X, gammas, sigma, prev_beta, prev_s)
+    etas = etas.reshape(etas.shape[0], etas.shape[1], 1)
+    gammas = gammas.reshape(etas.shape[0], 1, 1) #* np.ones(etas.shape)
+    losses, _ = generate_losses()
+    all_types_and_losses = np.concatenate((etas, gammas, losses), axis=1)
+    all_types_and_losses= all_types_and_losses.reshape(all_types_and_losses.shape[0], all_types_and_losses.shape[1])
+    
+    return all_types_and_losses, sigma
 
-def get_agent_distribution_nels(n, prev_beta, n_clusters=5, seed=0):
+def get_agent_distribution_and_losses_nels(n, prev_beta, n_clusters=8, seed=0):
+    
+    np.random.seed(seed)
+    
+    all_types_and_losses, sigma = get_types_loss_and_noise(prev_beta, seed)
+    kmeans = KMeans(n_clusters=n_clusters, random_state=0).fit(all_types_and_losses)
+    all_labels = kmeans.predict(all_types_and_losses)
+    unique, counts = np.unique(all_labels, return_counts=True)
+    prop = counts/all_types_and_losses.shape[0]
+    center_clusters = kmeans.cluster_centers_
+    rep_etas = kmeans.cluster_centers_[:, :-2].reshape(n_clusters, all_types_and_losses.shape[1]-2, 1)
+    rep_gammas = kmeans.cluster_centers_[:, -2:-1].reshape(n_clusters, 1, 1) * np.ones((n_clusters, all_types_and_losses.shape[1]-2, 1))
+    rep_losses = kmeans.cluster_centers_[:, -1:].reshape(n_clusters, 1, 1) 
+    
+    agent_dist = AgentDistribution(n=n, d=9, n_types=n_clusters, types={"etas":rep_etas, "gammas":rep_gammas}, prop=prop)
+    return agent_dist, all_types_and_losses, all_labels, rep_losses, sigma
+
+
+def get_agent_distribution_nels(n, prev_beta, n_clusters=8, seed=0):
     
     np.random.seed(seed)
     
