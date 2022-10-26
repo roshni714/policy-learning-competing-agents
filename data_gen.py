@@ -87,7 +87,7 @@ def generate_covariates():
     for variable in stmeg_variables:
         if variable != "STU_ID":
             stmeg[variable] = 10 * (stmeg[variable] - min_val[variable])/(max_val[variable] - min_val[variable])
-        if variable.startswith("F2RH"):
+        if variable.startswith("F2RH") or variable.startswith("F22X"):
             stmeg[variable] = 10-stmeg[variable]
     X = stmeg[stmeg_variables[2:]].to_numpy()
     socio_econ = stmeg[stmeg_variables[1:2]].to_numpy()
@@ -112,7 +112,7 @@ def generate_losses():
     stmeg["F3ATTEND"].replace(to_replace= -6., value=np.nan, inplace=True)
     stmeg["F3ATTEND"].replace(to_replace=np.nan, value=stmeg["F3ATTEND"].mean(), inplace=True)
     
-    stmeg["F3ATTEND"] = -stmeg["F3ATTEND"]/27
+    stmeg["F3ATTEND"] = -stmeg["F3ATTEND"]
     loss_admitted = stmeg["F3ATTEND"].to_numpy()
     stu_id = stmeg["STU_ID"].to_numpy()
     
@@ -155,7 +155,7 @@ def get_types_loss_and_noise(prev_beta, seed=0):
     
     return all_types_and_losses, sigma
 
-def get_agent_distribution_and_losses_nels(n, prev_beta, n_clusters=8, seed=0):
+def get_agent_distribution_and_losses_nels(n, prev_beta, n_clusters=10, seed=0):
     
     np.random.seed(seed)
     
@@ -173,7 +173,7 @@ def get_agent_distribution_and_losses_nels(n, prev_beta, n_clusters=8, seed=0):
     return agent_dist, all_types_and_losses, all_labels, rep_losses, sigma
 
 
-def get_agent_distribution_nels(n, prev_beta, n_clusters=8, seed=0):
+def get_agent_distribution_nels(n, prev_beta, n_clusters=10, seed=0):
     
     np.random.seed(seed)
     

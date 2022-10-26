@@ -142,9 +142,8 @@ def main(
         prev_beta = np.ones(d)/np.sqrt(d)
         agent_dist, _, _, losses, sigma = get_agent_distribution_and_losses_nels(n, prev_beta, n_clusters=5, seed=0)
         true_scores = losses[agent_dist.n_agent_types].reshape(agent_dist.n, 1) 
-        beta = np.random.normal(size=(agent_dist.d, 1))
-        beta_norm = np.sqrt(np.sum(beta ** 2))
-        beta /= beta_norm
+        beta = np.zeros((agent_dist.d, 1))
+        beta[0] = 1.
         betas, s_eqs, emp_losses = learn_model(agent_dist, 
                                                sigma, 
                                                q,
@@ -167,7 +166,7 @@ def main(
         true_beta[0] = 1.0
         etas = agent_dist.get_etas()
         true_scores = np.array(
-            [-np.matmul(self.true_beta.T, eta).item() for eta in etas]
+            [-np.matmul(true_beta.T, eta).item() for eta in etas]
         ).reshape(agent_dist.n, 1)
 
         betas, s_eqs, emp_losses = learn_model(
