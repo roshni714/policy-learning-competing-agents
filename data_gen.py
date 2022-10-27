@@ -87,7 +87,7 @@ def generate_covariates():
     for variable in stmeg_variables:
         if variable != "STU_ID":
             stmeg[variable] = 10 * (stmeg[variable] - min_val[variable])/(max_val[variable] - min_val[variable])
-        if variable.startswith("F2RH") or variable.startswith("F22X"):
+        if variable.startswith("F2RH"):
             stmeg[variable] = 10-stmeg[variable]
     X = stmeg[stmeg_variables[2:]].to_numpy()
     socio_econ = stmeg[stmeg_variables[1:2]].to_numpy()
@@ -111,6 +111,8 @@ def generate_losses():
     stmeg["F3ATTEND"].replace(to_replace= -9., value=np.nan, inplace=True)
     stmeg["F3ATTEND"].replace(to_replace= -6., value=np.nan, inplace=True)
     stmeg["F3ATTEND"].replace(to_replace=np.nan, value=stmeg["F3ATTEND"].mean(), inplace=True)
+    
+    print("losses", stmeg["F3ATTEND"].mean())
     
     stmeg["F3ATTEND"] = -stmeg["F3ATTEND"]
     loss_admitted = stmeg["F3ATTEND"].to_numpy()

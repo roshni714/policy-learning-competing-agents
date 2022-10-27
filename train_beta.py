@@ -136,14 +136,13 @@ def main(
 ):
     np.random.seed(seed)
     q = 0.7
-    
+
     if nels:
         d=9
         prev_beta = np.ones(d)/np.sqrt(d)
-        agent_dist, _, _, losses, sigma = get_agent_distribution_and_losses_nels(n, prev_beta, n_clusters=5, seed=0)
-        true_scores = losses[agent_dist.n_agent_types].reshape(agent_dist.n, 1) 
-        beta = np.zeros((agent_dist.d, 1))
-        beta[0] = 1.
+        agent_dist, _, _, losses, sigma = get_agent_distribution_and_losses_nels(n, prev_beta, n_clusters=5, seed=seed)
+        true_scores = losses[agent_dist.n_agent_types].reshape(agent_dist.n, 1)
+        prev_beta = prev_beta.reshape(agent_dist.d, 1)
         betas, s_eqs, emp_losses = learn_model(agent_dist, 
                                                sigma, 
                                                q,
@@ -153,7 +152,7 @@ def main(
                                                gradient_type=gradient_type,
                                                perturbation_s=perturbation_s,
                                                perturbation_beta=perturbation_beta,
-                                               beta_init=beta
+                                               beta_init=prev_beta
                                               )
 
         final_loss = emp_losses[-1]
