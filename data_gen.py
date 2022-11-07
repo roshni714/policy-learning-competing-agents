@@ -87,7 +87,7 @@ def generate_covariates():
     for variable in stmeg_variables:
         if variable != "STU_ID":
             stmeg[variable] = 10 * (stmeg[variable] - min_val[variable])/(max_val[variable] - min_val[variable])
-        if variable.startswith("F2RH") and variable.startswith("F22X"):
+        if variable.startswith("F2RH") or variable.startswith("F22X"):
             stmeg[variable] = 10-stmeg[variable]
     X = stmeg[stmeg_variables[2:]].to_numpy()
     socio_econ = stmeg[stmeg_variables[1:2]].to_numpy()
