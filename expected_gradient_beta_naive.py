@@ -3,7 +3,7 @@ import numpy as np
 from utils import convert_to_unit_vector, compute_score_bounds
 
 
-class ExpectedGradientNaive:
+class ExpectedGradientBetaNaive:
     def __init__(
         self, agent_dist, theta, s, sigma, true_beta,
     ):
@@ -24,27 +24,19 @@ class ExpectedGradientNaive:
                 for agent in self.agent_dist.agents
             ]
         ).reshape(self.agent_dist.n_types, 1)
-        (
-            self.br_dist,
-            self.grad_theta_dist,
-        ) = self.agent_dist.br_gradient_theta_distribution(
-            self.theta, self.s, self.sigma
+
+        self.br_dist = self.agent_dist.best_response_distribution(
+            self.beta, self.s, self.sigma
         )
 
-    def expected_gradient_loss_theta(self):
+    def expected_gradient_loss_beta(self):
         dim = self.agent_dist.d
-        assert dim == 2, "Method does not work for dimension {}".format(dim)
 
         z = self.s - np.array(
             [np.matmul(self.beta.T, x) for x in self.br_dist]
         ).reshape(len(self.br_dist), 1)
         prob = norm.pdf(z, loc=0.0, scale=self.sigma)
-        second_term = np.array(
-            [
-                np.matmul(self.br_dist[i].T, self.dbeta_dtheta).item()
-                for i in range(len(self.grad_theta_dist))
-            ]
-        ).reshape(self.agent_dist.n_types, 1)
+        second_term = np.array(self.br_dist).reshape(self.agent_dist.n_types, dim, 1)
 
         res = (
             prob
@@ -52,7 +44,11 @@ class ExpectedGradientNaive:
             * self.true_scores
             * self.agent_dist.prop.reshape(self.agent_dist.n_types, 1)
         )
-        dl_dtheta = np.sum(res).item()
+        dl_dbeta = np.sum(res, axis=0).item()
+
+        assert dl_dbeta.shape[0] == dim
+        assert dl_dbeta.shape[1] == 1
+
         return dl_dtheta
 
     def expected_loss(self):

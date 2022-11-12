@@ -8,7 +8,10 @@ def generate_codebook():
     dic = dict(zip(key, label))
     return dic
 
+
 def impute_values(df, to_replace_dic, replacement_vals_dic):
     for key in to_replace_dic:
         for val in to_replace_dic[key]:
-            df[key].replace(to_replace=val, value=replacement_vals_dic[key], inplace=True)
+            df[key].replace(
+                to_replace=val, value=replacement_vals_dic[key], inplace=True
+            )

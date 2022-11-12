@@ -156,7 +156,6 @@ def compute_score_bounds(beta, sigma):
     return min_score, max_score
 
 
-
 def spherical_coordinates(beta):
     assert beta.shape[0] == 2, "Method does not work for beta with dim {}".format(
         beta.shape[0]
@@ -193,11 +192,8 @@ def fixed_point_interpolation_true_distribution(
     # compute beta and fixed point for each theta
     for theta in tqdm.tqdm(thetas):
         beta = convert_to_unit_vector(np.array([theta]).reshape(1, 1))
-        fp = agent_dist.quantile_fixed_point_true_distribution(
-            beta, sigma, q
-        )
+        fp = agent_dist.quantile_fixed_point_true_distribution(beta, sigma, q)
         fixed_points.append(fp)
-
 
     f = interp1d(thetas, fixed_points, kind="linear")
 

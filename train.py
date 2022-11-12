@@ -48,25 +48,21 @@ def learn_model(
         s_eqs.append(s_eq)
 
         if "naive_expected" in gradient_type:
-            grad_exp = ExpectedGradient(agent_dist, 
-                       theta, 
-                       s_eq, 
-                       sigma,
-                       true_beta,
-                       )
+            grad_exp = ExpectedGradient(agent_dist, theta, s_eq, sigma, true_beta,)
             grad_theta = grad_exp.expected_gradient_loss_theta()
             loss = grad_exp.expected_loss()
 
         else:
             if "naive" in gradient_type:
-                grad_est = GradientEstimatorNaive(agent_dist, 
-                       theta, 
-                       s_eq, 
-                       sigma,
-                       q,
-                       true_beta,
-                       perturbation_theta_size=perturbation_theta
-                       )
+                grad_est = GradientEstimatorNaive(
+                    agent_dist,
+                    theta,
+                    s_eq,
+                    sigma,
+                    q,
+                    true_beta,
+                    perturbation_theta_size=perturbation_theta,
+                )
             else:
                 grad_est = GradientEstimator(
                     agent_dist,
@@ -77,7 +73,7 @@ def learn_model(
                     true_beta,
                     perturbation_s_size=perturbation_s,
                     perturbation_theta_size=perturbation_theta,
-                 )
+                )
             dic = grad_est.compute_total_derivative()
             loss = dic["loss"]
             if "total_deriv" in gradient_type:

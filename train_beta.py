@@ -26,9 +26,8 @@ def learn_model(
     gradient_type="total_deriv",
     perturbation_s=0.1,
     perturbation_beta=0.1,
-    beta_init=None
+    beta_init=None,
 ):
-   
 
     betas = []
     s_eqs = []
@@ -138,27 +137,30 @@ def main(
     q = 0.7
 
     if nels:
-        d=9
-        prev_beta = np.ones(d)/np.sqrt(d)
-        agent_dist, _, _, losses, sigma = get_agent_distribution_and_losses_nels(n, prev_beta, n_clusters=5, seed=seed)
+        d = 9
+        prev_beta = np.ones(d) / np.sqrt(d)
+        agent_dist, _, _, losses, sigma = get_agent_distribution_and_losses_nels(
+            n, prev_beta, n_clusters=5, seed=seed
+        )
         true_scores = losses[agent_dist.n_agent_types].reshape(agent_dist.n, 1)
         prev_beta = prev_beta.reshape(agent_dist.d, 1)
-        betas, s_eqs, emp_losses = learn_model(agent_dist, 
-                                               sigma, 
-                                               q,
-                                               true_scores=true_scores,
-                                               learning_rate=learning_rate,
-                                               max_iter=max_iter,
-                                               gradient_type=gradient_type,
-                                               perturbation_s=perturbation_s,
-                                               perturbation_beta=perturbation_beta,
-                                               beta_init=prev_beta
-                                              )
+        betas, s_eqs, emp_losses = learn_model(
+            agent_dist,
+            sigma,
+            q,
+            true_scores=true_scores,
+            learning_rate=learning_rate,
+            max_iter=max_iter,
+            gradient_type=gradient_type,
+            perturbation_s=perturbation_s,
+            perturbation_beta=perturbation_beta,
+            beta_init=prev_beta,
+        )
 
         final_loss = emp_losses[-1]
-    
+
     else:
-        
+
         agent_dist = create_generic_agent_dist(n, n_types, d)
         sigma = compute_continuity_noise(agent_dist) + 0.05
         true_beta = np.zeros((agent_dist.d, 1))
@@ -182,7 +184,7 @@ def main(
         final_loss = expected_policy_loss(
             agent_dist, np.array(betas[-1]).reshape(d, 1), s_eqs[-1], sigma
         )
- 
+
     results = {
         "n": n,
         "d": d,
