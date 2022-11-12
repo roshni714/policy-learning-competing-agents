@@ -3,8 +3,10 @@ import argh
 
 from agent_distribution import AgentDistribution
 from gradient_estimation import GradientEstimator
+from gradient_estimation_naive import GradientEstimatorNaive
 from expected_gradient import ExpectedGradient
 from expected_gradient_naive import ExpectedGradientNaive
+
 from reporting import report_results
 from utils import (
     compute_continuity_noise,
@@ -44,30 +46,41 @@ def learn_model(
         s_eq = agent_dist.quantile_fixed_point_true_distribution(beta, sigma, q)
         thetas.append(np.array(list(theta)).reshape(len(theta), 1))
         s_eqs.append(s_eq)
+
         if "naive_expected" in gradient_type:
-            grad_exp = ExpectedGradientNaive(agent_dist, 
+            grad_exp = ExpectedGradient(agent_dist, 
                        theta, 
                        s_eq, 
-                       sigma, 
-                       q, 
-                       true_beta)
-            loss = grad_exp.expected_loss()
+                       sigma,
+                       true_beta,
+                       )
             grad_theta = grad_exp.expected_gradient_loss_theta()
+            loss = grad_exp.expected_loss()
 
         else:
-            grad_est = GradientEstimator(
-                agent_dist,
-                theta,
-                s_eq,
-                sigma,
-                q,
-                true_beta,
-                perturbation_s_size=perturbation_s,
-                perturbation_theta_size=perturbation_theta,
-            )
+            if "naive" in gradient_type:
+                grad_est = GradientEstimatorNaive(agent_dist, 
+                       theta, 
+                       s_eq, 
+                       sigma,
+                       q,
+                       true_beta,
+                       perturbation_theta_size=perturbation_theta
+                       )
+            else:
+                grad_est = GradientEstimator(
+                    agent_dist,
+                    theta,
+                    s_eq,
+                    sigma,
+                    q,
+                    true_beta,
+                    perturbation_s_size=perturbation_s,
+                    perturbation_theta_size=perturbation_theta,
+                 )
             dic = grad_est.compute_total_derivative()
             loss = dic["loss"]
-            if gradient_type == "total_deriv":
+            if "total_deriv" in gradient_type:
                 grad_theta = dic["total_deriv"]
             elif gradient_type == "partial_deriv_loss_theta":
                 grad_theta = dic["partial_deriv_loss_theta"]
@@ -76,7 +89,7 @@ def learn_model(
         print(
             "Loss: {}".format(loss),
             "Theta:{}".format(theta),
-            "Gradient: {}".format(grad_theta),
+            "Gradient: {}".format(grad_theta * learning_rate),
         )
         theta -= grad_theta * learning_rate
         agent_dist.resample()

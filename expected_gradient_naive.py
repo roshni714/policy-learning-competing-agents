@@ -16,7 +16,7 @@ class ExpectedGradientNaive:
             true_beta = np.zeros((self.agent_dist.d, 1))
             true_beta[0] = 1.0
         self.true_beta = true_beta
-        self.bounds = compute_score_bounds(self.beta)
+        self.bounds = compute_score_bounds(self.beta, self.sigma)
 
         self.true_scores = np.array(
             [
@@ -30,9 +30,6 @@ class ExpectedGradientNaive:
         ) = self.agent_dist.br_gradient_theta_distribution(
             self.theta, self.s, self.sigma
         )
-        _, self.grad_s_dist = self.agent_dist.br_gradient_s_distribution(
-            self.beta, self.s, self.sigma
-        )
 
     def expected_gradient_loss_theta(self):
         dim = self.agent_dist.d
@@ -42,18 +39,17 @@ class ExpectedGradientNaive:
             [np.matmul(self.beta.T, x) for x in self.br_dist]
         ).reshape(len(self.br_dist), 1)
         prob = norm.pdf(z, loc=0.0, scale=self.sigma)
-
-        first_term = np.array(
+        second_term = np.array(
             [
-                np.matmul(self.grad_theta_dist[i].T, self.beta).item()
+                np.matmul(self.br_dist[i].T, self.dbeta_dtheta).item()
                 for i in range(len(self.grad_theta_dist))
             ]
         ).reshape(self.agent_dist.n_types, 1)
-        
+
         res = (
             prob
-            * total
-            * first_term
+            * second_term
+            * self.true_scores
             * self.agent_dist.prop.reshape(self.agent_dist.n_types, 1)
         )
         dl_dtheta = np.sum(res).item()

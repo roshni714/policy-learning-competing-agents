@@ -16,7 +16,7 @@ class ExpectedGradient:
             true_beta = np.zeros((self.agent_dist.d, 1))
             true_beta[0] = 1.0
         self.true_beta = true_beta
-        self.bounds = compute_score_bounds(self.beta)
+        self.bounds = compute_score_bounds(self.beta, self.sigma)
 
         self.true_scores = np.array(
             [
