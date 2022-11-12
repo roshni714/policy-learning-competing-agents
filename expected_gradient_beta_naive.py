@@ -5,7 +5,7 @@ from utils import convert_to_unit_vector, compute_score_bounds
 
 class ExpectedGradientBetaNaive:
     def __init__(
-        self, agent_dist, theta, s, sigma, true_beta,
+        self, agent_dist, theta, s, sigma, true_scores,
     ):
         self.agent_dist = agent_dist
         self.sigma = sigma
@@ -15,15 +15,8 @@ class ExpectedGradientBetaNaive:
         if true_beta is None:
             true_beta = np.zeros((self.agent_dist.d, 1))
             true_beta[0] = 1.0
-        self.true_beta = true_beta
+        self.true_scores = true_scores
         self.bounds = compute_score_bounds(self.beta, self.sigma)
-
-        self.true_scores = np.array(
-            [
-                -np.matmul(true_beta.T, agent.eta).item()
-                for agent in self.agent_dist.agents
-            ]
-        ).reshape(self.agent_dist.n_types, 1)
 
         self.br_dist = self.agent_dist.best_response_distribution(
             self.beta, self.s, self.sigma
@@ -50,6 +43,9 @@ class ExpectedGradientBetaNaive:
         assert dl_dbeta.shape[1] == 1
 
         return dl_dtheta
+
+    def empirical_loss(self):
+        """TODO"""
 
     def expected_loss(self):
         z = self.s - np.array(

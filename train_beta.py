@@ -42,26 +42,37 @@ def learn_model(
         s_eq = agent_dist.quantile_fixed_point_true_distribution(beta, sigma, q)
         betas.append(beta.copy())
         s_eqs.append(s_eq)
-        grad_est = GradientEstimator(
-            agent_dist,
-            beta,
-            s_eq,
-            sigma,
-            q,
-            true_scores,
-            perturbation_s_size=perturbation_s,
-            perturbation_beta_size=perturbation_beta,
-        )
-        if gradient_type == "total_deriv":
-            dic = grad_est.compute_total_derivative()
-            grad_beta = dic["total_deriv"]
-            loss = dic["loss"]
-        elif gradient_type == "partial_deriv_loss_beta":
-            dic = grad_est.compute_partial_derivative()
-            grad_beta = dic["partial_deriv_loss_beta"]
-            loss = dic["loss"]
+
+        if "naive" in gradient_type:
+            grad_exp = ExpectedGradientBetaNaive(
+                    agent_dist,
+                    beta,
+                    s_eq,
+                    sigma,
+                    true_scores)
+            grad_beta = grad_exp.expected_gradient_loss_beta()
+            loss = grad_exp.empirical_loss() 
         else:
-            assert False, "gradient type not valid"
+            grad_est = GradientEstimator(
+                agent_dist,
+                beta,
+                s_eq,
+                sigma,
+                q,
+                true_scores,
+                perturbation_s_size=perturbation_s,
+                perturbation_beta_size=perturbation_beta,
+            )
+            if gradient_type == "total_deriv":
+                dic = grad_est.compute_total_derivative()
+                grad_beta = dic["total_deriv"]
+                loss = dic["loss"]
+            elif gradient_type == "partial_deriv_loss_beta":
+                dic = grad_est.compute_partial_derivative()
+                grad_beta = dic["partial_deriv_loss_beta"]
+                loss = dic["loss"]
+            else:
+                assert False, "gradient type not valid"
 
         emp_losses.append(loss)
 
