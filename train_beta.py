@@ -3,6 +3,7 @@ import argh
 
 from agent_distribution import AgentDistribution
 from gradient_estimation_beta import GradientEstimator
+from expected_gradient_beta_naive import ExpectedGradientBetaNaive
 from reporting import report_results
 from utils import (
     compute_continuity_noise,
@@ -20,7 +21,7 @@ def learn_model(
     agent_dist,
     sigma,
     q,
-    true_scores,
+    true_scores=None,
     learning_rate=0.05,
     max_iter=30,
     gradient_type="total_deriv",
@@ -45,13 +46,10 @@ def learn_model(
 
         if "naive" in gradient_type:
             grad_exp = ExpectedGradientBetaNaive(
-                    agent_dist,
-                    beta,
-                    s_eq,
-                    sigma,
-                    true_scores)
+                agent_dist, beta, s_eq, sigma, q, true_scores
+            )
             grad_beta = grad_exp.expected_gradient_loss_beta()
-            loss = grad_exp.empirical_loss() 
+            loss = grad_exp.empirical_loss()
         else:
             grad_est = GradientEstimator(
                 agent_dist,
@@ -148,12 +146,16 @@ def main(
     q = 0.7
 
     if nels:
+        print("Getting NELS data...")
         d = 9
         prev_beta = np.ones(d) / np.sqrt(d)
         agent_dist, _, _, losses, sigma = get_agent_distribution_and_losses_nels(
-            n, prev_beta, n_clusters=5, seed=seed
+            n, prev_beta, n_clusters=8, seed=seed
         )
-        true_scores = losses[agent_dist.n_agent_types].reshape(agent_dist.n, 1)
+        if "naive" in gradient_type:
+            true_scores = losses.reshape(agent_dist.n_types, 1)
+        else:
+            true_scores = losses[agent_dist.n_agent_types].reshape(agent_dist.n, 1)
         prev_beta = prev_beta.reshape(agent_dist.d, 1)
         betas, s_eqs, emp_losses = learn_model(
             agent_dist,
@@ -171,16 +173,25 @@ def main(
         final_loss = emp_losses[-1]
 
     else:
-
+        print("Computing agent distribution...")
         agent_dist = create_generic_agent_dist(n, n_types, d)
         sigma = compute_continuity_noise(agent_dist) + 0.05
         true_beta = np.zeros((agent_dist.d, 1))
         true_beta[0] = 1.0
         etas = agent_dist.get_etas()
-        true_scores = np.array(
-            [-np.matmul(true_beta.T, eta).item() for eta in etas]
-        ).reshape(agent_dist.n, 1)
+        if "naive" in gradient_type:
+            true_scores = np.array(
+                [
+                    -np.matmul(true_beta.T, agent.eta).item()
+                    for agent in agent_dist.agents
+                ]
+            ).reshape(agent_dist.n_types, 1)
+        else:
+            true_scores = np.array(
+                [-np.matmul(true_beta.T, eta).item() for eta in etas]
+            ).reshape(agent_dist.n, 1)
 
+        print("Training model...")
         betas, s_eqs, emp_losses = learn_model(
             agent_dist,
             sigma,
