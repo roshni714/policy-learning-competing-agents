@@ -3,7 +3,6 @@ import argh
 
 from agent_distribution import AgentDistribution
 from gradient_estimation import GradientEstimator
-from gradient_estimation_naive import GradientEstimatorNaive
 from expected_gradient import ExpectedGradient
 from expected_gradient_naive import ExpectedGradientNaive
 

@@ -94,14 +94,16 @@ def generate_covariates():
     }
 
     impute_values(stmeg, to_replace, replacement_vals)
-
+    
     for variable in stmeg_variables:
-        if variable != "STU_ID":
+        if variable not in ["STU_ID", "F2SES1"]:
             stmeg[variable] = (
                 10
                 * (stmeg[variable] - min_val[variable])
                 / (max_val[variable] - min_val[variable])
             )
+        if variable=="F2SES1":
+            stmeg[variable] = (stmeg[variable] - min_val[variable]) / (max_val[variable] - min_val[variable])
         if variable.startswith("F2RH"):
             stmeg[variable] = 10 - stmeg[variable]
     X = stmeg[stmeg_variables[2:]].to_numpy()
@@ -111,7 +113,7 @@ def generate_covariates():
 
 
 def compute_gammas(socio_econ):
-    return 0.25 * socio_econ + 1e-1
+    return 1- np.clip(socio_econ, 0., 1.) + 0.05
 
 
 def compute_etas(X, gammas, sigma, beta, s):
@@ -136,7 +138,11 @@ def generate_losses():
         to_replace=np.nan, value=stmeg["F3ATTEND"].mean(), inplace=True
     )
 
-    loss_admitted = -stmeg["F3ATTEND"].to_numpy()
+    loss_admitted = -stmeg["F3ATTEND"].to_numpy().flatten()
+    _, socio_econ, _ = generate_covariates()
+    indicator_socio_econ = socio_econ < 7.
+    loss_admitted = -stmeg["F3ATTEND"].to_numpy() * indicator_socio_econ.flatten()
+    
     stu_id = stmeg["STU_ID"].to_numpy()
 
     return loss_admitted.reshape(len(loss_admitted), 1, 1), stu_id
@@ -149,7 +155,7 @@ def get_types_and_noise(prev_beta, seed=0):
     X, socio_econ, stu_id = generate_covariates()
 
     scores = [np.dot(prev_beta, X[i]) for i in range(len(X))]
-    prev_s = np.quantile(scores, 0.7)
+    prev_s = np.quantile(scores, 0.5)
     gammas = compute_gammas(socio_econ)
     sigma = compute_continuity_noise_gammas(gammas)
     etas = compute_etas(X, gammas, sigma, prev_beta, prev_s)
@@ -158,7 +164,7 @@ def get_types_and_noise(prev_beta, seed=0):
     all_types = np.concatenate((etas, gammas), axis=1)
     all_types = all_types.reshape(all_types.shape[0], all_types.shape[1])
 
-    return all_types, sigma
+    return all_types, etas, gammas, sigma
 
 
 def get_types_loss_and_noise(prev_beta, seed=0):
@@ -224,9 +230,12 @@ def get_agent_distribution_nels(n, prev_beta, n_clusters=10, seed=0):
     rep_etas = kmeans.cluster_centers_[:, :-1].reshape(
         n_clusters, all_types.shape[1] - 1, 1
     )
-    rep_gammas = kmeans.cluster_centers_[:, -1:].reshape(n_clusters, 1, 1) * np.ones(
+    rep_gammas =  np.ones(
         (n_clusters, all_types.shape[1] - 1, 1)
     )
+    rep_gammas[:, 4:7, :] *= kmeans.cluster_centers_[:, -1:].reshape(n_clusters, 4, 1)
+    
+    print(rep_gammas)
 
     agent_dist = AgentDistribution(
         n=n,
