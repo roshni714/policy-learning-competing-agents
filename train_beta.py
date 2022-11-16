@@ -40,6 +40,8 @@ def learn_model(
     else:
         beta = beta_init
     for i in range(max_iter):
+#        import pdb
+#        pdb.set_trace()
         s_eq = agent_dist.quantile_fixed_point_true_distribution(beta, sigma, q)
         betas.append(beta.copy())
         s_eqs.append(s_eq)
@@ -129,6 +131,8 @@ def create_challenging_agent_dist(n, n_types, d):
 @argh.arg("--gradient_type", default="total_deriv")
 @argh.arg("--seed", default=0)
 @argh.arg("--save", default="results")
+@argh.arg("--loss_type", default=None)
+
 def main(
     nels=False,
     n=100000,
@@ -141,6 +145,7 @@ def main(
     gradient_type="total_deriv",
     seed=0,
     save="results",
+    loss_type=None
 ):
     np.random.seed(seed)
     q = 0.7
@@ -149,9 +154,16 @@ def main(
         print("Getting NELS data...")
         d = 9
         prev_beta = np.ones(d) / np.sqrt(d)
-        agent_dist, _, _, losses, sigma = get_agent_distribution_and_losses_nels(
+        agent_dist, _, _, month_attended_losses, eta_losses, sigma = get_agent_distribution_and_losses_nels(
             n, prev_beta, n_clusters=8, seed=seed
         )
+        if loss_type == "etas":
+            losses= eta_losses
+        elif loss_type == "months_attended":
+            losses = month_attended_losses
+        else:
+            assert False
+
         if "naive" in gradient_type:
             true_scores = losses.reshape(agent_dist.n_types, 1)
         else:

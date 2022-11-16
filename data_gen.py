@@ -113,20 +113,31 @@ def generate_covariates():
 
 
 def compute_gammas(socio_econ):
-    return 1- np.clip(socio_econ, 0., 1.) + 0.05
+    return (1- np.clip(socio_econ, 0., 1.) + 0.05) * 0.1
 
 
 def compute_etas(X, gammas, sigma, beta, s):
-    etas = (
+
+    probs = norm.pdf(s - np.dot(X, beta), 0, scale=sigma).reshape(X.shape[0], 1)
+ 
+    etas_1 = (
         X
         - (1 / (2 * gammas))
-        * norm.pdf(s - np.dot(X, beta), 0, scale=sigma).reshape(X.shape[0], 1)
+        * probs
         * beta
     )
+    etas_2 = (
+        X
+        - (1 / (2 * 5))
+        * probs 
+        * beta
+    )
+    etas = np.copy(etas_2)
+    etas[:, 4:] = np.copy(etas_1[:, 4:])
     return etas
 
 
-def generate_losses():
+def generate_month_attended_losses():
     stmeg_variables = ["STU_ID", "F3ATTEND"]
     stmeg = pd.read_csv("data/nels_88_94_stmeg3_v1_0.csv", usecols=stmeg_variables)
     stmeg = stmeg.replace(r"^\s*$", np.nan, regex=True)
@@ -140,8 +151,7 @@ def generate_losses():
 
     loss_admitted = -stmeg["F3ATTEND"].to_numpy().flatten()
     _, socio_econ, _ = generate_covariates()
-    indicator_socio_econ = socio_econ < 7.
-    loss_admitted = -stmeg["F3ATTEND"].to_numpy() * indicator_socio_econ.flatten()
+    loss_admitted = -stmeg["F3ATTEND"].to_numpy()
     
     stu_id = stmeg["STU_ID"].to_numpy()
 
@@ -155,7 +165,7 @@ def get_types_and_noise(prev_beta, seed=0):
     X, socio_econ, stu_id = generate_covariates()
 
     scores = [np.dot(prev_beta, X[i]) for i in range(len(X))]
-    prev_s = np.quantile(scores, 0.5)
+    prev_s = np.quantile(scores, 0.25)
     gammas = compute_gammas(socio_econ)
     sigma = compute_continuity_noise_gammas(gammas)
     etas = compute_etas(X, gammas, sigma, prev_beta, prev_s)
@@ -180,8 +190,11 @@ def get_types_loss_and_noise(prev_beta, seed=0):
     etas = compute_etas(X, gammas, sigma, prev_beta, prev_s)
     etas = etas.reshape(etas.shape[0], etas.shape[1], 1)
     gammas = gammas.reshape(etas.shape[0], 1, 1)  # * np.ones(etas.shape)
-    losses, _ = generate_losses()
-    all_types_and_losses = np.concatenate((etas, gammas, losses), axis=1)
+    losses, _ = generate_month_attended_losses()
+    beta_only_test = np.ones(prev_beta.shape)
+    beta_only_test[4:] = 0.
+    eta_losses = -np.dot(etas.reshape(etas.shape[0], etas.shape[1]), beta_only_test).reshape(losses.shape)
+    all_types_and_losses = np.concatenate((etas, gammas, losses, eta_losses), axis=1)
     all_types_and_losses = all_types_and_losses.reshape(
         all_types_and_losses.shape[0], all_types_and_losses.shape[1]
     )
@@ -199,14 +212,18 @@ def get_agent_distribution_and_losses_nels(n, prev_beta, n_clusters=10, seed=0):
     unique, counts = np.unique(all_labels, return_counts=True)
     prop = counts / all_types_and_losses.shape[0]
     center_clusters = kmeans.cluster_centers_
-    rep_etas = kmeans.cluster_centers_[:, :-2].reshape(
-        n_clusters, all_types_and_losses.shape[1] - 2, 1
+    rep_etas = kmeans.cluster_centers_[:, :-3].reshape(
+        n_clusters, all_types_and_losses.shape[1] - 3, 1
     )
-    rep_gammas = kmeans.cluster_centers_[:, -2:-1].reshape(n_clusters, 1, 1) * np.ones(
-        (n_clusters, all_types_and_losses.shape[1] - 2, 1)
+    rep_gammas = kmeans.cluster_centers_[:, -3:-2].reshape(n_clusters, 1, 1) * np.ones(
+        (n_clusters, all_types_and_losses.shape[1] - 3, 1)
     )
-    rep_losses = kmeans.cluster_centers_[:, -1:].reshape(n_clusters, 1, 1)
+    rep_gammas[:, 4:, :] = 1.
 
+    month_attended_losses = kmeans.cluster_centers_[:, -2:-1].reshape(n_clusters, 1, 1)
+    eta_losses = kmeans.cluster_centers_[:,-1].reshape(n_clusters, 1, 1)
+#    import pdb
+#    pdb.set_trace()
     agent_dist = AgentDistribution(
         n=n,
         d=9,
@@ -214,7 +231,7 @@ def get_agent_distribution_and_losses_nels(n, prev_beta, n_clusters=10, seed=0):
         types={"etas": rep_etas, "gammas": rep_gammas},
         prop=prop,
     )
-    return agent_dist, all_types_and_losses, all_labels, rep_losses, sigma
+    return agent_dist, all_types_and_losses, all_labels, month_attended_losses, eta_losses, sigma
 
 
 def get_agent_distribution_nels(n, prev_beta, n_clusters=10, seed=0):
@@ -233,10 +250,7 @@ def get_agent_distribution_nels(n, prev_beta, n_clusters=10, seed=0):
     rep_gammas =  np.ones(
         (n_clusters, all_types.shape[1] - 1, 1)
     )
-    rep_gammas[:, 4:7, :] *= kmeans.cluster_centers_[:, -1:].reshape(n_clusters, 4, 1)
     
-    print(rep_gammas)
-
     agent_dist = AgentDistribution(
         n=n,
         d=9,

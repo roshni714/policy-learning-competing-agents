@@ -513,6 +513,5 @@ if __name__ == "__main__":
     agent_dist = AgentDistribution()
     etas = agent_dist.get_etas()
     gammas = agent_dist.get_gammas()
-    etas2 = agent_dist.get_etas()
     print(etas.shape)
     print(gammas.shape)
