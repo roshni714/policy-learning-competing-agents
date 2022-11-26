@@ -130,6 +130,7 @@ def create_challenging_agent_dist(n, n_types, d):
 @argh.arg("--max_iter", default=500)
 @argh.arg("--gradient_type", default="total_deriv")
 @argh.arg("--seed", default=0)
+@argh.arg("--save_dir", default="results")
 @argh.arg("--save", default="results")
 @argh.arg("--loss_type", default=None)
 
@@ -144,6 +145,7 @@ def main(
     max_iter=500,
     gradient_type="total_deriv",
     seed=0,
+    save_dir="results",
     save="results",
     loss_type=None
 ):
@@ -234,7 +236,7 @@ def main(
     }
     assert len(betas) == len(emp_losses)
     print(results)
-    report_results(results, betas, emp_losses, save)
+    report_results(save_dir, results, betas, emp_losses, save)
 
 
 if __name__ == "__main__":

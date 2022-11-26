@@ -185,6 +185,7 @@ def get_types_loss_and_noise(prev_beta, seed=0):
 
     scores = [np.dot(prev_beta, X[i]) for i in range(len(X))]
     prev_s = np.quantile(scores, 0.7)
+    print(prev_s)
     gammas = compute_gammas(socio_econ)
     sigma = compute_continuity_noise_gammas(gammas)
     etas = compute_etas(X, gammas, sigma, prev_beta, prev_s)
@@ -199,14 +200,14 @@ def get_types_loss_and_noise(prev_beta, seed=0):
         all_types_and_losses.shape[0], all_types_and_losses.shape[1]
     )
 
-    return all_types_and_losses, sigma
+    return all_types_and_losses, losses, eta_losses, sigma
 
 
 def get_agent_distribution_and_losses_nels(n, prev_beta, n_clusters=10, seed=0):
 
     np.random.seed(seed)
 
-    all_types_and_losses, sigma = get_types_loss_and_noise(prev_beta, seed)
+    all_types_and_losses, _, _, sigma = get_types_loss_and_noise(prev_beta, seed)
     kmeans = KMeans(n_clusters=n_clusters, random_state=0).fit(all_types_and_losses)
     all_labels = kmeans.predict(all_types_and_losses)
     unique, counts = np.unique(all_labels, return_counts=True)

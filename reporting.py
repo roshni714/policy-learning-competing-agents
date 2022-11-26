@@ -3,12 +3,12 @@ import os
 import matplotlib.pyplot as plt
 
 
-def report_results(results, thetas, losses, save):
-    results_file = "results/" + save + ".csv"
+def report_results(save_dir, results, thetas, losses, save):
+    results_file = save_dir + "/" + save + ".csv"
     write_result(results_file, results)
 
     train_file = (
-        "results/"
+        save_dir + "/" 
         + save
         + "_seed_{}".format(results["seed"])
         + "_gradient_type_{}".format(results["gradient_type"])
