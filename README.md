@@ -23,3 +23,5 @@ chmod +x run_high_dim.sh
 ./run_high_dim.sh
 ```
 and reproduce results from Figure 4 and Table 2 using paper-figure-4.ipynb and paper-table-2.ipynb, respectively.
+
+To run NELS experiments, use the following command.
