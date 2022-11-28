@@ -3,24 +3,26 @@ import os
 import matplotlib.pyplot as plt
 
 
-def report_results(save_dir, results, thetas, losses, save):
+def report_results(save_dir, results, save, thetas=None, losses=None):
     results_file = save_dir + "/" + save + ".csv"
     write_result(results_file, results)
 
     train_file = (
-        save_dir + "/" 
+        save_dir
+        + "/"
         + save
         + "_seed_{}".format(results["seed"])
-        + "_gradient_type_{}".format(results["gradient_type"])
+        + "_method_{}".format(results["method"])
         + "_train.csv"
     )
 
-    for i in range(len(thetas)):
-        iteration_dic = {}
-        iteration_dic["iteration"] = i
-        iteration_dic["loss"] = losses[i]
-        iteration_dic["params"] = list(thetas[i].flatten())
-        write_result(train_file, iteration_dic)
+    if results["method"] != "ewm":
+        for i in range(len(thetas)):
+            iteration_dic = {}
+            iteration_dic["iteration"] = i
+            iteration_dic["loss"] = losses[i]
+            iteration_dic["params"] = list(thetas[i].flatten())
+            write_result(train_file, iteration_dic)
 
 
 #    plt.plot(list(range(len(losses))), losses)

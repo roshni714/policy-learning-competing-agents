@@ -4,6 +4,8 @@ import argh
 from agent_distribution import AgentDistribution
 from gradient_estimation_beta import GradientEstimator
 from expected_gradient_beta_naive import ExpectedGradientBetaNaive
+from empirical_welfare_maximization import EmpiricalWelfareMaximization
+
 from reporting import report_results
 from utils import (
     compute_continuity_noise,
@@ -24,7 +26,7 @@ def learn_model(
     true_scores=None,
     learning_rate=0.05,
     max_iter=30,
-    gradient_type="total_deriv",
+    method="total_deriv",
     perturbation_s=0.1,
     perturbation_beta=0.1,
     beta_init=None,
@@ -40,39 +42,39 @@ def learn_model(
     else:
         beta = beta_init
     for i in range(max_iter):
-#        import pdb
-#        pdb.set_trace()
+        #        import pdb
+        #        pdb.set_trace()
         s_eq = agent_dist.quantile_fixed_point_true_distribution(beta, sigma, q)
         betas.append(beta.copy())
         s_eqs.append(s_eq)
 
-        if "naive" in gradient_type:
-            grad_exp = ExpectedGradientBetaNaive(
-                agent_dist, beta, s_eq, sigma, q, true_scores
-            )
-            grad_beta = grad_exp.expected_gradient_loss_beta()
-            loss = grad_exp.empirical_loss()
+        #        if "naive" in method:
+        #            grad_exp = ExpectedGradientBetaNaive(
+        #                agent_dist, beta, s_eq, sigma, q, true_scores
+        #            )
+        #            grad_beta = grad_exp.expected_gradient_loss_beta()
+        #            loss = grad_exp.empirical_loss()
+        #        else:
+        grad_est = GradientEstimator(
+            agent_dist,
+            beta,
+            s_eq,
+            sigma,
+            q,
+            true_scores,
+            perturbation_s_size=perturbation_s,
+            perturbation_beta_size=perturbation_beta,
+        )
+        if method == "total_deriv":
+            dic = grad_est.compute_total_derivative()
+            grad_beta = dic["total_deriv"]
+            loss = dic["loss"]
+        elif method == "partial_deriv_loss_beta":
+            dic = grad_est.compute_partial_derivative()
+            grad_beta = dic["partial_deriv_loss_beta"]
+            loss = dic["loss"]
         else:
-            grad_est = GradientEstimator(
-                agent_dist,
-                beta,
-                s_eq,
-                sigma,
-                q,
-                true_scores,
-                perturbation_s_size=perturbation_s,
-                perturbation_beta_size=perturbation_beta,
-            )
-            if gradient_type == "total_deriv":
-                dic = grad_est.compute_total_derivative()
-                grad_beta = dic["total_deriv"]
-                loss = dic["loss"]
-            elif gradient_type == "partial_deriv_loss_beta":
-                dic = grad_est.compute_partial_derivative()
-                grad_beta = dic["partial_deriv_loss_beta"]
-                loss = dic["loss"]
-            else:
-                assert False, "gradient type not valid"
+            assert False, "gradient type not valid"
 
         emp_losses.append(loss)
 
@@ -128,12 +130,11 @@ def create_challenging_agent_dist(n, n_types, d):
 @argh.arg("--perturbation_beta", default=0.1)
 @argh.arg("--learning_rate", default=1.0)
 @argh.arg("--max_iter", default=500)
-@argh.arg("--gradient_type", default="total_deriv")
+@argh.arg("--method", default="total_deriv")
 @argh.arg("--seed", default=0)
 @argh.arg("--save_dir", default="results")
 @argh.arg("--save", default="results")
 @argh.arg("--loss_type", default=None)
-
 def main(
     nels=False,
     n=100000,
@@ -143,11 +144,11 @@ def main(
     perturbation_beta=0.1,
     learning_rate=1.0,
     max_iter=500,
-    gradient_type="total_deriv",
+    method="total_deriv",
     seed=0,
     save_dir="results",
     save="results",
-    loss_type=None
+    loss_type=None,
 ):
     np.random.seed(seed)
     q = 0.7
@@ -156,35 +157,25 @@ def main(
         print("Getting NELS data...")
         d = 9
         prev_beta = np.ones(d) / np.sqrt(d)
-        agent_dist, _, _, month_attended_losses, eta_losses, sigma = get_agent_distribution_and_losses_nels(
+        (
+            agent_dist,
+            _,
+            _,
+            month_attended_losses,
+            hrs_work_losses,
+            sigma,
+        ) = get_agent_distribution_and_losses_nels(
             n, prev_beta, n_clusters=8, seed=seed
         )
-        if loss_type == "etas":
-            losses= eta_losses
+        if loss_type == "hrs_work":
+            losses = hrs_work_losses
         elif loss_type == "months_attended":
             losses = month_attended_losses
         else:
             assert False
 
-        if "naive" in gradient_type:
-            true_scores = losses.reshape(agent_dist.n_types, 1)
-        else:
-            true_scores = losses[agent_dist.n_agent_types].reshape(agent_dist.n, 1)
+        true_scores = losses[agent_dist.n_agent_types].reshape(agent_dist.n, 1)
         prev_beta = prev_beta.reshape(agent_dist.d, 1)
-        betas, s_eqs, emp_losses = learn_model(
-            agent_dist,
-            sigma,
-            q,
-            true_scores=true_scores,
-            learning_rate=learning_rate,
-            max_iter=max_iter,
-            gradient_type=gradient_type,
-            perturbation_s=perturbation_s,
-            perturbation_beta=perturbation_beta,
-            beta_init=prev_beta,
-        )
-
-        final_loss = emp_losses[-1]
 
     else:
         print("Computing agent distribution...")
@@ -193,19 +184,18 @@ def main(
         true_beta = np.zeros((agent_dist.d, 1))
         true_beta[0] = 1.0
         etas = agent_dist.get_etas()
-        if "naive" in gradient_type:
-            true_scores = np.array(
-                [
-                    -np.matmul(true_beta.T, agent.eta).item()
-                    for agent in agent_dist.agents
-                ]
-            ).reshape(agent_dist.n_types, 1)
-        else:
-            true_scores = np.array(
-                [-np.matmul(true_beta.T, eta).item() for eta in etas]
-            ).reshape(agent_dist.n, 1)
+        true_scores = np.array(
+            [-np.matmul(true_beta.T, eta).item() for eta in etas]
+        ).reshape(agent_dist.n, 1)
 
-        print("Training model...")
+    if method == "ewm":
+        ewm = EmpiricalWelfareMaximization(agent_dist, sigma, q, true_beta=None)
+        final_beta = ewm.estimate_beta()
+        s_eq = agent_dist.quantile_fixed_point_true_distribution(final_beta, sigma, q)
+        final_loss = ewm.empirical_loss(final_beta, s_eq)
+        final_s = s_eq
+
+    else:
         betas, s_eqs, emp_losses = learn_model(
             agent_dist,
             sigma,
@@ -213,13 +203,14 @@ def main(
             true_scores=true_scores,
             learning_rate=learning_rate,
             max_iter=max_iter,
-            gradient_type=gradient_type,
+            method=method,
             perturbation_s=perturbation_s,
             perturbation_beta=perturbation_beta,
+            beta_init=prev_beta,
         )
-        final_loss = expected_policy_loss(
-            agent_dist, np.array(betas[-1]).reshape(d, 1), s_eqs[-1], sigma
-        )
+
+        final_loss = emp_losses[-1]
+        final_beta = list(betas[-1].flatten())
 
     results = {
         "n": n,
@@ -228,11 +219,11 @@ def main(
         "sigma": sigma,
         "q": q,
         "seed": seed,
-        "perturbation_s": perturbation_s,
-        "perturbation_beta": perturbation_beta,
+        #        "perturbation_s": perturbation_s,
+        #        "perturbation_beta": perturbation_beta,
         "final_loss": final_loss,
-        "final_beta": list(betas[-1].flatten()),
-        "gradient_type": gradient_type,
+        "final_beta": final_beta,
+        "method": method,
     }
     assert len(betas) == len(emp_losses)
     print(results)

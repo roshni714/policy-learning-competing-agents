@@ -42,7 +42,30 @@ class ExpectedGradientBetaNaive:
         assert dl_dbeta.shape[0] == dim
         assert dl_dbeta.shape[1] == 1
 
-        return dl_dbeta
+        dV_dr = np.sum(
+            -(
+                prob
+                * self.true_scores.reshape(self.agent_dist.n_types, 1, 1)
+                * self.agent_dist.prop.reshape(self.agent_dist.n_types, 1, 1)
+            ),
+            axis=0,
+        )
+        density = np.sum(
+            prob * self.agent_dist.prop.reshape(self.agent_dist.n_types, 1, 1), axis=0
+        )
+        dr_dbeta = (
+            np.sum(
+                prob
+                * second_term
+                * self.agent_dist.prop.reshape(self.agent_dist.n_types, 1, 1),
+                axis=0,
+            )
+            / density
+        )
+
+        capacity_deriv_beta = dV_dr * dr_dbeta
+
+        return dl_dbeta + capacity_deriv_beta
 
     def empirical_loss(self):
         br_star_scores = np.array(

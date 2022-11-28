@@ -5,8 +5,9 @@ from utils import convert_to_unit_vector, compute_score_bounds
 
 class ExpectedGradientNaive:
     def __init__(
-        self, agent_dist, theta, s, sigma, true_beta,
+        self, agent_dist, theta, s, sigma, q, true_beta,
     ):
+        self.q = q
         self.agent_dist = agent_dist
         self.sigma = sigma
         self.theta = theta
@@ -30,6 +31,10 @@ class ExpectedGradientNaive:
         ) = self.agent_dist.br_gradient_theta_distribution(
             self.theta, self.s, self.sigma
         )
+        self.dbeta_dtheta = np.array([-np.sin(theta), np.cos(theta)]).reshape(2, 1)
+        self.noise = norm.rvs(loc=0.0, scale=sigma, size=agent_dist.n).reshape(
+            agent_dist.n, 1
+        )
 
     def expected_gradient_loss_theta(self):
         dim = self.agent_dist.d
@@ -52,8 +57,43 @@ class ExpectedGradientNaive:
             * self.true_scores
             * self.agent_dist.prop.reshape(self.agent_dist.n_types, 1)
         )
+        dV_dr = -np.sum(
+            prob
+            * self.true_scores
+            * self.agent_dist.prop.reshape(self.agent_dist.n_types, 1)
+        )
+        density = np.sum(
+            prob * self.agent_dist.prop.reshape(self.agent_dist.n_types, 1)
+        )
+        dr_dtheta = (
+            np.sum(
+                prob
+                * second_term
+                * self.agent_dist.prop.reshape(self.agent_dist.n_types, 1)
+            )
+            / density
+        )
+        capacity_deriv_theta = (dV_dr * dr_dtheta).item()
+
         dl_dtheta = np.sum(res).item()
-        return dl_dtheta
+
+        return dl_dtheta + capacity_deriv_theta
+
+    def empirical_loss(self):
+        br_star_scores = np.array(
+            [np.matmul(self.beta.T, br).item() for br in self.br_dist]
+        )
+        types = self.agent_dist.n_agent_types.astype(int)
+        n_br = np.array(br_star_scores[self.agent_dist.n_agent_types]).reshape(
+            self.agent_dist.n, 1
+        )
+        scores = n_br + self.noise
+        cutoff = np.quantile(scores, self.q)
+        treatments = scores > cutoff
+        n_true_scores = self.true_scores[self.agent_dist.n_agent_types]
+        losses = n_true_scores * treatments
+
+        return np.mean(losses).item()
 
     def expected_loss(self):
         z = self.s - np.array(
