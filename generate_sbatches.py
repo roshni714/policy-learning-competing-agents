@@ -55,8 +55,7 @@ def generate_low_dim():
         exp_id = "low_dim_11-25-22"
         script_fn = os.path.join(OUTPUT_PATH, "{}_seed_{}.sh".format(exp_id, seed))
 
-        methods = ["ewm", "total_deriv", "partial_deriv_loss_beta"]
-
+        methods = ["ewm", "total_deriv", "partial_deriv_loss_theta"]
         with open(script_fn, "w") as f:
             print(
                 SBATCH_PREFACE.format(exp_id, OUTPUT_PATH, exp_id, OUTPUT_PATH, exp_id),

@@ -71,6 +71,8 @@ def learn_model(
             grad_theta = dic["total_deriv"]
         elif method == "partial_deriv_loss_theta":
             grad_theta = dic["partial_deriv_loss_theta"]
+        else:
+            assert False
 
         emp_losses.append(loss)
         print(
