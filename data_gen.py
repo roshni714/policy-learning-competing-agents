@@ -202,19 +202,19 @@ def get_types_loss_and_noise(prev_beta, seed=0):
     etas = etas.reshape(etas.shape[0], etas.shape[1], 1)
     gammas = gammas.reshape(etas.shape[0], 1, 1)  # * np.ones(etas.shape)
     losses, _ = generate_month_attended_losses()
-    beta_only_test = np.ones(prev_beta.shape)
+    beta_only_test = np.ones(prev_beta.shape) / 4
     beta_only_test[4:] = 0.0
-    hrs_work_losses, _ = generate_hrs_work_losses()
+    # hrs_work_losses, _ = generate_hrs_work_losses()
 
-    # eta_losses = -np.dot(etas.reshape(etas.shape[0], etas.shape[1]), beta_only_test).reshape(losses.shape)
-    all_types_and_losses = np.concatenate(
-        (etas, gammas, losses, hrs_work_losses), axis=1
-    )
+    eta_losses = -np.dot(
+        etas.reshape(etas.shape[0], etas.shape[1]), beta_only_test
+    ).reshape(losses.shape)
+    all_types_and_losses = np.concatenate((etas, gammas, losses, eta_losses), axis=1)
     all_types_and_losses = all_types_and_losses.reshape(
         all_types_and_losses.shape[0], all_types_and_losses.shape[1]
     )
 
-    return all_types_and_losses, losses, hrs_work_losses, sigma
+    return all_types_and_losses, losses, eta_losses, sigma
 
 
 def get_agent_distribution_and_losses_nels(n, prev_beta, n_clusters=10, seed=0):
@@ -236,7 +236,7 @@ def get_agent_distribution_and_losses_nels(n, prev_beta, n_clusters=10, seed=0):
     rep_gammas[:, 4:, :] = 1.0
 
     month_attended_losses = kmeans.cluster_centers_[:, -2:-1].reshape(n_clusters, 1, 1)
-    hrs_work_losses = kmeans.cluster_centers_[:, -1].reshape(n_clusters, 1, 1)
+    eta_losses = kmeans.cluster_centers_[:, -1].reshape(n_clusters, 1, 1)
     #    import pdb
     #    pdb.set_trace()
     agent_dist = AgentDistribution(
@@ -251,7 +251,7 @@ def get_agent_distribution_and_losses_nels(n, prev_beta, n_clusters=10, seed=0):
         all_types_and_losses,
         all_labels,
         month_attended_losses,
-        hrs_work_losses,
+        eta_losses,
         sigma,
     )
 

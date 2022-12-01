@@ -21,6 +21,7 @@ from data_gen import get_agent_distribution_and_losses_nels
 
 def learn_model(
     agent_dist,
+    nels,
     sigma,
     q,
     true_scores=None,
@@ -30,6 +31,9 @@ def learn_model(
     perturbation_s=0.1,
     perturbation_beta=0.1,
     beta_init=None,
+    loss_type=None,
+    month_attended_losses=None,
+    eta_losses=None,
 ):
 
     betas = []
@@ -42,6 +46,9 @@ def learn_model(
     else:
         beta = beta_init
     for i in range(max_iter):
+        true_scores = get_true_scores(
+            agent_dist, nels, loss_type, month_attended_losses, eta_losses
+        )
         #        import pdb
         #        pdb.set_trace()
         s_eq = agent_dist.quantile_fixed_point_true_distribution(beta, sigma, q)
@@ -86,6 +93,7 @@ def learn_model(
         beta -= grad_beta * learning_rate
         beta_norm = np.sqrt(np.sum(beta ** 2))
         beta /= beta_norm
+        agent_dist.resample()
 
     return betas, s_eqs, emp_losses
 
@@ -122,6 +130,28 @@ def create_challenging_agent_dist(n, n_types, d):
     return agent_dist
 
 
+def get_true_scores(
+    agent_dist, nels, loss_type=None, month_attended_losses=None, eta_losses=None
+):
+    if nels:
+        if loss_type == "etas":
+            losses = eta_losses
+        elif loss_type == "months_attended":
+            losses = month_attended_losses
+        else:
+            assert False
+        true_scores = losses[agent_dist.n_agent_types].reshape(agent_dist.n, 1)
+    else:
+        true_beta = np.zeros((agent_dist.d, 1))
+        true_beta[0] = 1.0
+        etas = agent_dist.get_etas()
+        true_scores = np.array(
+            [-np.matmul(true_beta.T, eta).item() for eta in etas]
+        ).reshape(agent_dist.n, 1)
+
+    return true_scores
+
+
 @argh.arg("--nels", default=False)
 @argh.arg("--n", default=100000)
 @argh.arg("--n_types", default=1)
@@ -152,65 +182,63 @@ def main(
 ):
     np.random.seed(seed)
     q = 0.7
+    prev_beta = np.ones(d) / np.sqrt(d)
 
     if nels:
         print("Getting NELS data...")
         d = 9
-        prev_beta = np.ones(d) / np.sqrt(d)
         (
             agent_dist,
             _,
             _,
             month_attended_losses,
-            hrs_work_losses,
+            eta_losses,
             sigma,
         ) = get_agent_distribution_and_losses_nels(
             n, prev_beta, n_clusters=8, seed=seed
         )
-        if loss_type == "hrs_work":
-            losses = hrs_work_losses
-        elif loss_type == "months_attended":
-            losses = month_attended_losses
-        else:
-            assert False
 
-        true_scores = losses[agent_dist.n_agent_types].reshape(agent_dist.n, 1)
         prev_beta = prev_beta.reshape(agent_dist.d, 1)
 
     else:
         print("Computing agent distribution...")
         agent_dist = create_generic_agent_dist(n, n_types, d)
         sigma = compute_continuity_noise(agent_dist) + 0.05
-        true_beta = np.zeros((agent_dist.d, 1))
-        true_beta[0] = 1.0
-        etas = agent_dist.get_etas()
-        true_scores = np.array(
-            [-np.matmul(true_beta.T, eta).item() for eta in etas]
-        ).reshape(agent_dist.n, 1)
+        month_attended_losses = None
+        eta_losses = None
+        loss_type = None
 
     if method == "ewm":
-        ewm = EmpiricalWelfareMaximization(agent_dist, sigma, q, true_beta=None)
+        true_scores = get_true_scores(
+            agent_dist, nels, loss_type, month_attended_losses, eta_losses
+        )
+        ewm = EmpiricalWelfareMaximization(agent_dist, sigma, q, true_scores)
         final_beta = ewm.estimate_beta()
         s_eq = agent_dist.quantile_fixed_point_true_distribution(final_beta, sigma, q)
         final_loss = ewm.empirical_loss(final_beta, s_eq)
         final_s = s_eq
-
+        betas = None
+        emp_losses = None
+        final_beta = list(final_beta.flatten())
     else:
         betas, s_eqs, emp_losses = learn_model(
             agent_dist,
-            sigma,
-            q,
-            true_scores=true_scores,
+            nels=nels,
+            sigma=sigma,
+            q=q,
             learning_rate=learning_rate,
             max_iter=max_iter,
             method=method,
             perturbation_s=perturbation_s,
             perturbation_beta=perturbation_beta,
-            beta_init=prev_beta,
+            loss_type=loss_type,
+            month_attended_losses=month_attended_losses,
+            eta_losses=eta_losses,
         )
 
         final_loss = emp_losses[-1]
         final_beta = list(betas[-1].flatten())
+        assert len(betas) == len(emp_losses)
 
     results = {
         "n": n,
@@ -225,9 +253,8 @@ def main(
         "final_beta": final_beta,
         "method": method,
     }
-    assert len(betas) == len(emp_losses)
     print(results)
-    report_results(save_dir, results, betas, emp_losses, save)
+    report_results(save_dir, results, thetas=betas, losses=emp_losses, save=save)
 
 
 if __name__ == "__main__":

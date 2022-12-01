@@ -36,9 +36,7 @@ class EmpiricalWelfareMaximization:
             X = self.eta_dist[idx.flatten(), :, :]
             noise = self.noise_d_dim[idx.flatten(), :, :]
             noisy_X = X + noise
-            reg = LinearRegression().fit(
-                noisy_X.reshape(len(noisy_X), self.agent_dist.d), outcomes
-            )
+            reg = LinearRegression().fit(X.reshape(len(X), self.agent_dist.d), outcomes)
             coefs.append(reg.coef_)
             intercepts.append(reg.intercept_)
 
@@ -55,7 +53,7 @@ class EmpiricalWelfareMaximization:
         n_br = np.array(br_star_scores[self.agent_dist.n_agent_types]).reshape(
             self.agent_dist.n, 1
         )
-        scores = n_br + self.noise
+        scores = n_br  # + self.noise
         cutoff = np.quantile(scores, self.q)
         treatments = scores > cutoff
         losses = self.true_scores * treatments
