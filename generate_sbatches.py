@@ -80,7 +80,7 @@ def generate_low_dim():
     seeds = list(range(10))
 
     for seed in seeds:
-        exp_id = "low_dim_11-25-22"
+        exp_id = "low_dim_12-13-23"
         script_fn = os.path.join(OUTPUT_PATH, "{}_seed_{}.sh".format(exp_id, seed))
 
         methods = ["ewm", "total_deriv", "partial_deriv_loss_theta"]
@@ -102,4 +102,4 @@ def generate_low_dim():
                 print("sleep 1", file=f)
 
 
-generate_nels()
+generate_low_dim()

@@ -180,8 +180,7 @@ def main(
         final_theta = convert_to_polar_coordinates(final_beta).item()
         final_s = s_eq
         final_loss = expected_policy_loss(agent_dist, final_beta, final_s, sigma)
-        thetas = None
-        emp_losses = None
+        res_dic = None
     else:
         res_dic = learn_model(
             agent_dist,
@@ -240,7 +239,7 @@ def main(
             "method": method,
         }
     print(results)
-    report_results(save_dir, results, res_dic, save=save)
+    report_results(save_dir, results, res_dic=res_dic, save=save)
 
 
 if __name__ == "__main__":
