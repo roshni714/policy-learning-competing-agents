@@ -3,7 +3,7 @@ import os
 import matplotlib.pyplot as plt
 
 
-def report_results(save_dir, results, save, thetas=None, losses=None):
+def report_results(save_dir, results, save, res_dic=None):
     results_file = save_dir + "/" + save + ".csv"
     write_result(results_file, results)
 
@@ -17,11 +17,15 @@ def report_results(save_dir, results, save, thetas=None, losses=None):
     )
 
     if results["method"] != "ewm":
-        for i in range(len(thetas)):
+        for i in range(len(res_dic["params"])):
             iteration_dic = {}
             iteration_dic["iteration"] = i
-            iteration_dic["loss"] = losses[i]
-            iteration_dic["params"] = list(thetas[i].flatten())
+            iteration_dic["loss"] = res_dic["emp_losses"][i]
+            iteration_dic["params"] = list(res_dic["params"][i].flatten())
+            iteration_dic["mag_pg"] = res_dic["mag_pg"][i]
+            iteration_dic["mag_eg"] = res_dic["mag_eg"][i]
+            iteration_dic["mag_mg"] = res_dic["mag_mg"][i]
+
             write_result(train_file, iteration_dic)
 
 

@@ -51,9 +51,13 @@ class Agent:
             if all(res.converged):
                 val = res.root
             else:
-                val = np.array([0.0, 0.0]).reshape(2, 1)
+                val = x0
+                val[np.where(res.converged)] = res.root[np.where(res.converged)]
         except:
-            val = np.array([0.0, 0.0]).reshape(2, 1)
+            if x0 is None:
+                val = self.eta.flatten()
+            else:
+                val = x0.flatten()
             print(
                 "Failed to compute best response for agent with eta={}, gamma={} under beta={}, s={}, sigma={}.".format(
                     self.eta, self.gamma, beta, s, sigma
@@ -172,7 +176,7 @@ class Agent:
         G = np.diag(self.gamma.flatten())
         best_response = self.best_response(beta, s, sigma)
         arg = s - np.matmul(beta.T, best_response)
-        prob_prime = -(arg / (sigma ** 2)) * norm.pdf(arg, loc=0, scale=sigma)
+        prob_prime = -(arg / (sigma**2)) * norm.pdf(arg, loc=0, scale=sigma)
         rank_one_mat = np.matmul(beta, beta.T)
         deriv_s = np.matmul(
             np.linalg.inv(2 * G + prob_prime * rank_one_mat) * prob_prime, beta
@@ -197,7 +201,7 @@ class Agent:
         best_response = self.best_response(beta, s, sigma)
         arg = s - np.matmul(beta.T, best_response)
         prob = norm.pdf(arg, loc=0, scale=sigma)
-        prob_prime = -(arg / (sigma ** 2)) * norm.pdf(arg, loc=0, scale=sigma)
+        prob_prime = -(arg / (sigma**2)) * norm.pdf(arg, loc=0, scale=sigma)
         rank_one_mat = np.matmul(beta, beta.T)
         dbeta_dtheta = np.array([-np.sin(theta), np.cos(theta)]).reshape(2, 1)
         G = np.diag(self.gamma.flatten())

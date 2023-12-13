@@ -33,9 +33,15 @@ def learn_model(
     true_beta[0] = 1.0
 
     theta = convert_to_polar_coordinates(true_beta)
-    thetas = []
-    s_eqs = []
-    emp_losses = []
+
+    res_dic = {
+        "params": [],
+        "s_eqs": [],
+        "emp_losses": [],
+        "mag_pg": [],
+        "mag_eg": [],
+        "mag_mg": [],
+    }
     for i in range(max_iter):
         true_scores = np.array(
             [-np.matmul(true_beta.T, eta).item() for eta in agent_dist.get_etas()]
@@ -46,8 +52,8 @@ def learn_model(
         #        s_eq = f(theta.item())
         beta = convert_to_unit_vector(theta)
         s_eq = agent_dist.quantile_fixed_point_true_distribution(beta, sigma, q)
-        thetas.append(np.array(list(theta)).reshape(len(theta), 1))
-        s_eqs.append(s_eq)
+        res_dic["params"].append(np.array(list(theta)).reshape(len(theta), 1))
+        res_dic["s_eqs"].append(s_eq)
 
         #        if "naive" in method:
         #            grad_exp = ExpectedGradientNaive(agent_dist, theta, s_eq, sigma, q, true_beta)
@@ -74,7 +80,19 @@ def learn_model(
         else:
             assert False
 
-        emp_losses.append(loss)
+        res_dic["emp_losses"].append(loss)
+        res_dic["mag_mg"].append(
+            np.sqrt(np.sum(dic["partial_deriv_loss_theta"] ** 2)).item()
+        )
+        res_dic["mag_pg"].append(np.sqrt(np.sum(dic["total_deriv"] ** 2)).item())
+        res_dic["mag_eg"].append(
+            np.sqrt(
+                np.sum(
+                    (dic["partial_deriv_loss_s"] * dic["partial_deriv_s_theta"]) ** 2
+                )
+            ).item()
+        )
+
         print(
             "Loss: {}".format(loss),
             "Theta:{}".format(theta),
@@ -83,7 +101,7 @@ def learn_model(
         theta -= grad_theta * learning_rate
         agent_dist.resample()
 
-    return thetas, s_eqs, emp_losses
+    return res_dic
 
 
 def create_generic_agent_dist(n, n_types, d):
@@ -165,7 +183,7 @@ def main(
         thetas = None
         emp_losses = None
     else:
-        thetas, s_eqs, emp_losses = learn_model(
+        res_dic = learn_model(
             agent_dist,
             sigma,
             q,
@@ -175,12 +193,12 @@ def main(
             perturbation_s=perturbation_s,
             perturbation_theta=perturbation_theta,
         )
-        final_theta = thetas[-1][0].item()
-        final_s = s_eqs[-1]
+        final_theta = res_dic["params"][-1][0].item()
+        final_s = res_dic["s_eqs"][-1]
         final_loss = expected_policy_loss(
-            agent_dist, convert_to_unit_vector(thetas[-1]), final_s, sigma
+            agent_dist, convert_to_unit_vector(res_dic["params"][-1]), final_s, sigma
         )
-        assert len(thetas) == len(emp_losses)
+        assert len(res_dic["params"]) == len(res_dic["emp_losses"])
 
     if d == 2:
         f = fixed_point_interpolation_true_distribution(
@@ -222,7 +240,7 @@ def main(
             "method": method,
         }
     print(results)
-    report_results(save_dir, results, thetas=thetas, losses=emp_losses, save=save)
+    report_results(save_dir, results, res_dic, save=save)
 
 
 if __name__ == "__main__":

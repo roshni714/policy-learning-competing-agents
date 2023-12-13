@@ -97,34 +97,34 @@ def optimal_beta_empirical_policy_loss(
     return min_loss, opt_beta, opt_s_beta, thetas, losses
 
 
-def expected_policy_loss(agent_dist, beta, s, sigma, true_beta=None):
+def expected_policy_loss(agent_dist, beta, s, sigma, true_scores=None):
     """Method that computes the expected policy loss of deploying a particular model.
-    
+
     Keyword args:
     agent_dist -- AgentDistribution
     beta -- model parameters
     s -- threshold
     sigma -- standard deviation of noise distribution
     true_beta -- optional ideal model
-    
-    
+
+
     Returns:
     loss -- expected policy loss at beta
     """
     dim = agent_dist.d
 
-    if true_beta is None:
+    if true_scores is None:
         true_beta = np.zeros(beta.shape)
         true_beta[0] = 1.0
+        true_scores = np.array(
+            [-np.matmul(true_beta.T, agent.eta).item() for agent in agent_dist.agents]
+        ).reshape(agent_dist.n_types, 1)
 
     #    bounds = compute_score_bounds(beta)
-    true_scores = np.array(
-        [np.matmul(true_beta.T, agent.eta).item() for agent in agent_dist.agents]
-    ).reshape(agent_dist.n_types, 1)
     br_dist = agent_dist.best_response_score_distribution(beta, s, sigma)
     z = s - br_dist.reshape(agent_dist.n_types, 1)
     prob = 1 - norm.cdf(x=z, loc=0.0, scale=sigma)
-    product = -true_scores * prob * agent_dist.prop.reshape(agent_dist.n_types, 1)
+    product = true_scores * prob * agent_dist.prop.reshape(agent_dist.n_types, 1)
     return np.sum(product).item()  # np.sum(product).item()
 
 
@@ -132,13 +132,13 @@ def optimal_beta_expected_policy_loss(
     agent_dist, sigma, f, true_beta=None, plot=False, savefig=None
 ):
     """Method returns the model parameters that minimize the expected policy loss.
-    
+
     Keyword args:
     agent_dist -- AgentDistribution
     sigma -- standard deviation of noise distribution
     f -- function that maps arctan(beta[1]/beta[0]) -> s_beta (fixed point)
     true_beta -- optional ideal model
-    plot -- optional plotting 
+    plot -- optional plotting
     savefig -- path to save figure
     """
     dim = agent_dist.d

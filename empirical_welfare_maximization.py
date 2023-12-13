@@ -6,7 +6,11 @@ from sklearn.linear_model import LinearRegression
 
 class EmpiricalWelfareMaximization:
     def __init__(
-        self, agent_dist, sigma, q, true_scores,
+        self,
+        agent_dist,
+        sigma,
+        q,
+        true_scores,
     ):
         self.q = q
         self.agent_dist = agent_dist
@@ -32,7 +36,10 @@ class EmpiricalWelfareMaximization:
         intercepts = []
         for treatment in [0.0, 1.0]:
             idx = self.treatment_assignment == treatment
-            outcomes = -self.true_scores[idx]
+            if treatment == 1.0:
+                outcomes = -self.true_scores[idx]
+            else:
+                outcomes = np.zeros(np.sum(idx))
             X = self.eta_dist[idx.flatten(), :, :]
             noise = self.noise_d_dim[idx.flatten(), :, :]
             noisy_X = X + noise
@@ -41,7 +48,7 @@ class EmpiricalWelfareMaximization:
             intercepts.append(reg.intercept_)
 
         cate = coefs[1] - coefs[0]
-        cate_norm = np.sqrt(np.sum(cate ** 2))
+        cate_norm = np.sqrt(np.sum(cate**2))
         beta_naive = cate / cate_norm
 
         return beta_naive
@@ -53,7 +60,7 @@ class EmpiricalWelfareMaximization:
         n_br = np.array(br_star_scores[self.agent_dist.n_agent_types]).reshape(
             self.agent_dist.n, 1
         )
-        scores = n_br  # + self.noise
+        scores = n_br + self.noise
         cutoff = np.quantile(scores, self.q)
         treatments = scores > cutoff
         losses = self.true_scores * treatments
