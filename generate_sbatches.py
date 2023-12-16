@@ -56,7 +56,7 @@ def generate_high_dim():
     methods = ["ewm", "total_deriv", "partial_deriv_loss_beta"]
 
     for seed in seeds:
-        exp_id = "high_dim_11-26-22"
+        exp_id = "high_dim_12-13-23"
         script_fn = os.path.join(OUTPUT_PATH, "{}_seed_{}.sh".format(exp_id, seed))
         with open(script_fn, "w") as f:
             print(
@@ -68,7 +68,7 @@ def generate_high_dim():
                 base_cmd = "python /zfs/gsb/intermediate-yens/rsahoo/policy-learning-competing-agents/train_beta.py main "
                 new_cmd = (
                     base_cmd
-                    + "--n 1000000 --d 10 --n_types 10 --perturbation_s 0.2 --perturbation_beta 0.025 --learning_rate 0.5 --max_iter 100 --save_dir {} --save high_dim_11-26-22 --seed {} --method {}\n".format(
+                    + "--n 1000000 --d 10 --n_types 10 --perturbation_s 0.2 --perturbation_beta 0.025 --learning_rate 0.5 --max_iter 50 --save_dir {} --save high_dim_12-13-23 --seed {} --method {}\n".format(
                         SAVE_PATH, seed, method
                     )
                 )
@@ -102,4 +102,5 @@ def generate_low_dim():
                 print("sleep 1", file=f)
 
 
-generate_low_dim()
+# generate_low_dim()
+generate_high_dim()
