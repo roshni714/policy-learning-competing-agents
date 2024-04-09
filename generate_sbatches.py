@@ -24,14 +24,12 @@ SAVE_PATH = "/zfs/gsb/intermediate-yens/rsahoo/policy-learning-competing-agents/
 
 
 def generate_nels():
-    #    seeds = list(range(10))
-    seeds = [0]
-    #    loss_types = ["etas", "months_attended"]
+    seeds = list(range(10))
     loss_types = ["socio_econ", "etas", "months_attended"]
-    methods = ["total_deriv"]
+    methods = ["total_deriv", "partial_deriv_loss_beta", "ewm"]
     for seed in seeds:
-        exp_id = "nels_12-11-23_b_seed_{}".format(seed)
-        script_fn = os.path.join(OUTPUT_PATH, "{}_seed_{}.sh".format(exp_id, seed))
+        exp_id = "nels_4-2-24_seed_{}".format(seed)
+        script_fn = os.path.join(OUTPUT_PATH, "{}.sh".format(exp_id))
         with open(script_fn, "w") as f:
             print(
                 SBATCH_PREFACE.format(exp_id, OUTPUT_PATH, exp_id, OUTPUT_PATH, exp_id),
@@ -43,7 +41,33 @@ def generate_nels():
                     base_cmd = "python /zfs/gsb/intermediate-yens/rsahoo/policy-learning-competing-agents/train_beta.py main --nels "
                     new_cmd = (
                         base_cmd
-                        + "--n 1000000 --d 9 --perturbation_s 0.2 --perturbation_beta 0.025 --learning_rate 0.1 --max_iter 50 --save_dir {} --save nels_{}_12-11-23_b --seed {} --method {}  --loss_type {}\n".format(
+                        + "--n 1000000 --d 9 --perturbation_s 0.2 --perturbation_beta 0.025 --learning_rate 0.1 --max_iter 50 --save_dir {} --save nels_{}_4-2-24 --seed {} --method {}  --loss_type {}\n".format(
+                            SAVE_PATH, loss_type, seed, method, loss_type
+                        )
+                    )
+                    print(new_cmd, file=f)
+                    print("sleep 1", file=f)
+
+
+def generate_nels_small():
+    seeds = list(range(10))
+    loss_types = ["months_attended", "etas", "socio_econ"]
+    methods = ["total_deriv", "partial_deriv_loss_beta", "ewm"]
+    for seed in seeds:
+        exp_id = "nels_small_4-2-24_seed_{}".format(seed)
+        script_fn = os.path.join(OUTPUT_PATH, "{}.sh".format(exp_id))
+        with open(script_fn, "w") as f:
+            print(
+                SBATCH_PREFACE.format(exp_id, OUTPUT_PATH, exp_id, OUTPUT_PATH, exp_id),
+                file=f,
+            )
+
+            for loss_type in loss_types:
+                for method in methods:
+                    base_cmd = "python /zfs/gsb/intermediate-yens/rsahoo/policy-learning-competing-agents/train_beta.py main --nels "
+                    new_cmd = (
+                        base_cmd
+                        + "--n 14915 --d 9 --perturbation_s 0.2 --perturbation_beta 0.025 --learning_rate 0.025 --max_iter 50 --save_dir {} --save nels_small_{}_4-2-24 --seed {} --method {}  --loss_type {}\n".format(
                             SAVE_PATH, loss_type, seed, method, loss_type
                         )
                     )
@@ -102,5 +126,7 @@ def generate_low_dim():
                 print("sleep 1", file=f)
 
 
+generate_nels()
+generate_nels_small()
 # generate_low_dim()
-generate_high_dim()
+# generate_high_dim()

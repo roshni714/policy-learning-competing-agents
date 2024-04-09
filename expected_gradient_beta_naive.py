@@ -5,7 +5,13 @@ from utils import convert_to_unit_vector, compute_score_bounds
 
 class ExpectedGradientBetaNaive:
     def __init__(
-        self, agent_dist, beta, s, sigma, q, true_scores,
+        self,
+        agent_dist,
+        beta,
+        s,
+        sigma,
+        q,
+        true_scores,
     ):
         self.agent_dist = agent_dist
         self.sigma = sigma

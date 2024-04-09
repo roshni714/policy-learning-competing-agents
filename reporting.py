@@ -22,9 +22,10 @@ def report_results(save_dir, results, save, res_dic=None):
             iteration_dic["iteration"] = i
             iteration_dic["loss"] = res_dic["emp_losses"][i]
             iteration_dic["params"] = list(res_dic["params"][i].flatten())
-            iteration_dic["mag_pg"] = res_dic["mag_pg"][i]
-            iteration_dic["mag_eg"] = res_dic["mag_eg"][i]
-            iteration_dic["mag_mg"] = res_dic["mag_mg"][i]
+            if results["method"] == "total_deriv":
+                iteration_dic["mag_pg"] = res_dic["mag_pg"][i]
+                iteration_dic["mag_eg"] = res_dic["mag_eg"][i]
+                iteration_dic["mag_mg"] = res_dic["mag_mg"][i]
 
             write_result(train_file, iteration_dic)
 

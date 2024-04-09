@@ -116,7 +116,7 @@ def expected_gradient_loss_s(agent_dist, theta, s, sigma, true_beta=None):
     f -- function that maps arctan(beta[1]/beta[0]) -> s_beta (fixed point)
 
     Returns:
-    d_pi_d_s -- expected gradient wrt to s of policy loss 
+    d_pi_d_s -- expected gradient wrt to s of policy loss
 
     """
     dim = agent_dist.d
@@ -273,7 +273,7 @@ def expected_gradient_pi_s(agent_dist, theta, s, sigma, r):
     f -- function that maps arctan(beta[1]/beta[0]) -> s_beta (fixed point)
 
     Returns:
-    d_pi_d_s -- expected gradient wrt to s of policy loss 
+    d_pi_d_s -- expected gradient wrt to s of policy loss
 
     """
     dim = agent_dist.d

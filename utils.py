@@ -41,13 +41,13 @@ def convert_to_polar_coordinates(beta):
         else:
             if i < d - 2:
                 rem_beta = beta[i:]
-                norm = np.sqrt(np.sum(rem_beta ** 2))
+                norm = np.sqrt(np.sum(rem_beta**2))
                 psi = np.arccos(beta[i] / norm)
                 theta[i] = psi
 
             if i == d - 2:
                 rem_beta = beta[i:]
-                norm = np.sqrt(np.sum(rem_beta ** 2))
+                norm = np.sqrt(np.sum(rem_beta**2))
                 psi = np.arccos(beta[i] / norm)
                 if beta[-1] >= 0:
                     angle = psi

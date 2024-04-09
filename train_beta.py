@@ -49,8 +49,9 @@ def learn_model(
         beta = np.random.uniform(-1, 1, size=(agent_dist.d, 1))
         beta_norm = np.sqrt(np.sum(beta**2))
         beta /= beta_norm
-    else:
-        beta = beta_init
+    elif beta_init == "uniform":
+        beta = np.ones((agent_dist.d, 1)) / np.sqrt(agent_dist.d)
+
     for i in range(max_iter):
         true_scores = get_n_true_scores(
             agent_dist,
@@ -95,15 +96,18 @@ def learn_model(
             assert False, "gradient type not valid"
 
         res_dic["emp_losses"].append(loss)
-        res_dic["mag_mg"].append(
-            np.sqrt(np.sum(dic["partial_deriv_loss_beta"] ** 2)).item()
-        )
-        res_dic["mag_pg"].append(np.sqrt(np.sum(dic["total_deriv"] ** 2)).item())
-        res_dic["mag_eg"].append(
-            np.sqrt(
-                np.sum((dic["partial_deriv_loss_s"] * dic["partial_deriv_s_beta"]) ** 2)
-            ).item()
-        )
+        if method == "total_deriv":
+            res_dic["mag_mg"].append(
+                np.sqrt(np.sum(dic["partial_deriv_loss_beta"] ** 2)).item()
+            )
+            res_dic["mag_pg"].append(np.sqrt(np.sum(dic["total_deriv"] ** 2)).item())
+            res_dic["mag_eg"].append(
+                np.sqrt(
+                    np.sum(
+                        (dic["partial_deriv_loss_s"] * dic["partial_deriv_s_beta"]) ** 2
+                    )
+                ).item()
+            )
 
         print(
             "Loss: {}".format(loss),
@@ -120,27 +124,27 @@ def learn_model(
 
 def create_generic_agent_dist(n, n_types, d):
     etas = np.random.uniform(3.0, 8.0, n_types * d).reshape(n_types, d, 1)
-    gammas = np.random.uniform(0.05, 5.0, n_types * d).reshape(n_types, d, 1)
+    gammas = np.random.uniform(0.05, 0.2, n_types * d).reshape(n_types, d, 1)
     dic = {"etas": etas, "gammas": gammas}
     agent_dist = AgentDistribution(n=n, d=d, n_types=n_types, types=dic, prop=None)
     return agent_dist
 
 
 def create_challenging_agent_dist(n, n_types, d):
-    gaming_type_etas = np.random.uniform(3.0, 5.0, int(n_types * d / 2)).reshape(
+    gaming_type_etas = np.random.uniform(1.0, 3.0, int(n_types * d / 2)).reshape(
         int(n_types / 2), d, 1
     )
     gaming_type_gamma_one = np.random.uniform(
-        0.01, 0.02, int(n_types / 2) * int(d / 2)
+        0.1, 0.2, int(n_types / 2) * int(d / 2)
     ).reshape(int(n_types / 2), int(d / 2), 1)
     gaming_type_gamma_two = np.random.uniform(
-        10.0, 20.0, int(n_types * (d - int(d / 2)) / 2)
+        1.0, 2.0, int(n_types * (d - int(d / 2)) / 2)
     ).reshape(int(n_types / 2), d - int(d / 2), 1)
     gaming_type_gammas = np.hstack((gaming_type_gamma_one, gaming_type_gamma_two))
-    natural_type_etas = np.random.uniform(5.0, 7.0, int(n_types * d / 2)).reshape(
+    natural_type_etas = np.random.uniform(3.0, 5.0, int(n_types * d / 2)).reshape(
         int(n_types / 2), d, 1
     )
-    natural_type_gammas = np.random.uniform(10.0, 20.0, int(n_types * d / 2)).reshape(
+    natural_type_gammas = np.random.uniform(1.0, 2.0, int(n_types * d / 2)).reshape(
         int(n_types / 2), d, 1
     )
     etas = np.vstack((gaming_type_etas, natural_type_etas))
@@ -169,8 +173,8 @@ def get_n_true_scores(
             assert False
         true_scores = losses[agent_dist.n_agent_types].reshape(agent_dist.n, 1)
     else:
-        true_beta = np.zeros((agent_dist.d, 1))
-        true_beta[0] = 1.0
+        true_beta = np.ones((agent_dist.d, 1))
+        true_beta[int(agent_dist.d / 2) :] = 0.0
         etas = agent_dist.get_etas()
         true_scores = np.array(
             [-np.matmul(true_beta.T, eta).item() for eta in etas]
@@ -198,8 +202,8 @@ def get_true_scores(
             assert False
         true_scores = true_scores.reshape(agent_dist.n_types, 1)
     else:
-        true_beta = np.zeros((agent_dist.d, 1))
-        true_beta[0] = 1.0
+        true_beta = np.ones((agent_dist.d, 1))
+        true_beta[int(agent_dist.d / 2) :] = 0.0
         etas = agent_dist.types["etas"]
         true_scores = np.array(
             [-np.matmul(true_beta.T, eta).item() for eta in etas]
@@ -257,15 +261,17 @@ def main(
         )
 
         prev_beta = prev_beta.reshape(agent_dist.d, 1)
+        beta_init = None
 
     else:
         print("Computing agent distribution...")
-        agent_dist = create_generic_agent_dist(n, n_types, d)
+        agent_dist = create_challenging_agent_dist(n, n_types, d)
         sigma = compute_continuity_noise(agent_dist) + 0.05
         month_attended_losses = None
         eta_losses = None
         socio_econ_losses = None
         loss_type = None
+        beta_init = "uniform"
 
     if method == "ewm":
         true_scores = get_n_true_scores(
@@ -303,6 +309,7 @@ def main(
             nels=nels,
             sigma=sigma,
             q=q,
+            beta_init=beta_init,
             learning_rate=learning_rate,
             max_iter=max_iter,
             method=method,

@@ -20,10 +20,10 @@ class GradientEstimator:
         self.sigma = sigma
 
         self.perturbations_s_idx = np.random.choice(
-            list(range(0, 2 ** 1)), size=agent_dist.n
+            list(range(0, 2**1)), size=agent_dist.n
         )
         self.perturbations_beta_idx = np.random.choice(
-            list(range(0, 2 ** agent_dist.d)), size=agent_dist.n
+            list(range(0, 2**agent_dist.d)), size=agent_dist.n
         )
 
         self.noise = norm.rvs(loc=0.0, scale=sigma, size=agent_dist.n).reshape(

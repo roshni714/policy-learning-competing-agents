@@ -254,6 +254,13 @@ def get_agent_distribution_and_losses_nels(n, prev_beta, n_clusters=10, seed=0):
         / (max(-socio_econ_losses) - min(-socio_econ_losses))
         * 10
     )
+
+    print(
+        "months attended loss", min(month_attended_losses), max(month_attended_losses)
+    )
+    print("eta loss", min(eta_losses), max(eta_losses))
+    print("socio econ loss", min(socio_econ_losses), max(socio_econ_losses))
+
     agent_dist = AgentDistribution(
         n=n,
         d=9,

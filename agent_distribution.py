@@ -10,12 +10,12 @@ from agent import Agent
 
 class AgentDistribution:
     """This is a class for representing a distribution over a finite number of agents.
-    
+
     Keyword arguments:
     n -- number of agents in distribution (float)
     d -- dimension of agent (float)
     n_types -- number of agent types (float)
-    types -- optional argument: a dictionary of agent types of the form 
+    types -- optional argument: a dictionary of agent types of the form
         {etas: (n_types, D, 1), gammas: (n_types, D, 1)}
     prop -- optional argument: proportion of population with each type (D,1) array, by default this is uniform.
     """
@@ -84,12 +84,12 @@ class AgentDistribution:
 
     def best_response_distribution(self, beta, s, sigma):
         """This is a method that returns the best response of each agent type to a model and threshold.
-        
+
         Keyword arguments:
         beta -- model parameters (D,1) array
         s -- threshold (float)
         sigma -- standard deviation of noise distribution (float)
-        
+
         Returns:
         br -- a list of np.arrays
         """
@@ -100,12 +100,12 @@ class AgentDistribution:
 
     def br_gradient_theta_distribution(self, theta, s, sigma):
         """This is a method that returns the best response of each agent type to a model and threshold and the gradient wrt to theta.
-        
+
         Keyword arguments:
         theta -- model parameters (D,1) array
         s -- threshold (float)
         sigma -- standard deviation of noise distribution (float)
-        
+
         Returns
         br -- a list of np.arrays of dimension (D, 1)
         grad -- a list of np.arrays of dimension (D, 1)
@@ -120,12 +120,12 @@ class AgentDistribution:
 
     def br_gradient_s_distribution(self, beta, s, sigma):
         """This is a method that returns the best response of each agent type to a model and threshold and the derivative wrt to s.
-        
+
         Keyword arguments:
         beta -- model parameters
         s -- threshold
         sigma -- standard deviation of noise distribution
-        
+
         Returns:
         br -- a list of np.arrays of dimension (D, 1)
         deriv_s -- a list of np.arrays of dimension (D, 1)
@@ -140,12 +140,12 @@ class AgentDistribution:
 
     def best_response_score_distribution(self, beta, s, sigma):
         """This is a method that returns the score of the best response of each agent type to a model and threshold.
-        
+
         Keyword arguments:
         beta -- model parameters (D, 1) array
         s -- threshold (float)
         sigma -- standard deviation of noise distribution(float)
-        
+
         Returns:
         br_score_dist -- a (n_types,) dimensional array
         """
@@ -157,12 +157,12 @@ class AgentDistribution:
 
     def best_response_noisy_score_distribution(self, beta, s, sigma):
         """This is a method that returns the distribution over agent scores after noise has been added
-        
+
         Keyword arguments:
         beta -- model parameters (D,1) array
         s -- threshold (float)
         sigma -- standard deviation of noise distribution(float)
-        
+
         Returns:
         br_dist -- a (N, 1) dimensional array
         """
@@ -177,12 +177,12 @@ class AgentDistribution:
 
     def quantile_best_response(self, beta, s, sigma, q):
         """The method returns the qth quantile of the noisy score distribution.
-        
+
         Keyword arguments:
         beta -- model parameters (D,1) array
         s -- threshold (float)
         sigma -- standard deviation of noise distribution(float)
-        
+
         Returns:
         q_quantile -- qth quantile of the noisy score distribution (float)
         """
@@ -192,7 +192,7 @@ class AgentDistribution:
 
     def plot_quantile_best_response(self, beta, sigma, q):
         """This method plots the quantile of the noisy score distribution vs. thresholds.
-        
+
         Keyword arguments:
         beta -- model parameters (D,1) array
         s -- threshold (float)
@@ -212,7 +212,7 @@ class AgentDistribution:
 
     def quantile_mapping_vary_s(self, beta, sigma, q):
         """This method returns the quantile mapping function q(beta, s) for fixed beta.
-        
+
         Keyword arguments:
         beta -- model parameters (Nx1)
         sigma -- standard deviation of noise distribution(float)
@@ -237,7 +237,7 @@ class AgentDistribution:
     def quantile_mapping_vary_beta(self, s, sigma, q):
         """This method returns the quantile mapping function q(beta, s) for fixed s.
         CAUTION: This method assumes that model is represented by 1-dimensional polar coordinate theta.
-        
+
         Keyword arguments:
         s -- threshold (float)
         sigma -- standard deviation of noise distribution(float)
@@ -275,7 +275,7 @@ class AgentDistribution:
         beta -- model parameters (D,1) array
         sigma -- standard deviation of noise distribution (float)
         q -- quantile (float)
-        
+
         Returns:
         s_star -- fixed point (float)
         """
@@ -321,7 +321,7 @@ class AgentDistribution:
         beta -- model parameters (D,1) array
         sigma -- standard deviation of noise distribution (float)
         q -- quantile (float)
-        
+
         Returns:
         curr -- value of q(beta, s) (float)
         """
@@ -430,7 +430,7 @@ class AgentDistribution:
     ):
         """This method computes the iterates of stochastic fixed point iteration with the random quantile operator.
         Note that the iterates are random variables and will not converge to deterministic fixed point.
-        
+
         Keyword arguments:
         beta -- model parameters (D,1) array
         sigma -- standard deviation of noise distribution(float)
@@ -464,11 +464,11 @@ class AgentDistribution:
     def quantile_fixed_point_iteration_true_distribution(
         self, beta, sigma, q, maxiter=200, s0=0.5, plot=False
     ):
-        """ 
-        This method computes the iterates of fixed point iteration with the population quantile operator. 
-        by fixed point iteration. When the population quantile operator is a contraction, this will converge 
+        """
+        This method computes the iterates of fixed point iteration with the population quantile operator.
+        by fixed point iteration. When the population quantile operator is a contraction, this will converge
         to the deterministic fixed point. Otherwise, it is not guaranteed to converge.
-        
+
         Keyword arguments:
         beta -- model parameters (D,1) array
         sigma -- standard deviation of noise distribution(float)

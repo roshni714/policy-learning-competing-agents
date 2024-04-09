@@ -5,7 +5,12 @@ from utils import convert_to_unit_vector, compute_score_bounds
 
 class ExpectedGradient:
     def __init__(
-        self, agent_dist, theta, s, sigma, true_beta,
+        self,
+        agent_dist,
+        theta,
+        s,
+        sigma,
+        true_beta,
     ):
         self.agent_dist = agent_dist
         self.sigma = sigma
